@@ -1,5 +1,5 @@
 import React from "react";
-import { Dices, RotateCcw, RotateCw, Download, Bookmark, Info, Command, Sliders } from "lucide-react";
+import { Dices, RotateCcw, RotateCw, Download, Bookmark, Info, Command, Sliders, Wand2, Heart } from "lucide-react";
 import { JantraRecipe } from "../../types/recipe";
 
 interface HeaderProps {
@@ -10,6 +10,8 @@ interface HeaderProps {
   onRedo: () => void;
   onRandomizeSeed: () => void;
   onOpenPresets: () => void;
+  onOpenEvolution: () => void;
+  onOpenSketchbook: () => void;
   onOpenExport: () => void;
   onOpenAbout: () => void;
   onOpenShortcuts: () => void;
@@ -25,6 +27,8 @@ export const Header: React.FC<HeaderProps> = ({
   onRedo,
   onRandomizeSeed,
   onOpenPresets,
+  onOpenEvolution,
+  onOpenSketchbook,
   onOpenExport,
   onOpenAbout,
   onOpenShortcuts,
@@ -92,6 +96,28 @@ export const Header: React.FC<HeaderProps> = ({
             <RotateCw className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* Variations Matrix */}
+        <button
+          type="button"
+          onClick={onOpenEvolution}
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs font-medium text-amber-300 hover:text-amber-200 transition-colors"
+          title="Explore Harmonic Variations & Mutations"
+        >
+          <Wand2 className="w-3.5 h-3.5 text-amber-400" />
+          <span>Evolve</span>
+        </button>
+
+        {/* Sketchbook / Favorites */}
+        <button
+          type="button"
+          onClick={onOpenSketchbook}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs font-medium text-zinc-200 transition-colors"
+          title="Artist Sketchbook & Favorites"
+        >
+          <Heart className="w-3.5 h-3.5 text-rose-400" />
+          <span className="hidden sm:inline">Sketchbook</span>
+        </button>
 
         {/* Presets Button */}
         <button

@@ -8,10 +8,14 @@ import { Footer } from "./components/layout/Footer";
 import { Canvas } from "./components/canvas/Canvas";
 import { GrowthOverlay } from "./components/canvas/GrowthOverlay";
 import { ControlsOverlay } from "./components/canvas/ControlsOverlay";
+import { PatternTileOverlay } from "./components/canvas/PatternTileOverlay";
 import { IntentBar } from "./components/intent/IntentBar";
 import { Inspector } from "./components/inspector/Inspector";
 import { ExportModal } from "./components/export/ExportModal";
 import { PresetsModal } from "./components/inspector/PresetsModal";
+import { EvolutionModal } from "./components/inspector/EvolutionModal";
+import { SketchbookModal } from "./components/inspector/SketchbookModal";
+import { SymbolismModal } from "./components/common/SymbolismModal";
 import { AboutModal } from "./components/common/AboutModal";
 import { KeyboardShortcutsModal } from "./components/common/KeyboardShortcutsModal";
 
@@ -66,12 +70,16 @@ export function App() {
     setSpeed: setGrowthSpeed,
   } = useGrowthAnimation(recipe.seed);
 
-  // Modals state
+  // Modals and view mode state
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isPresetsOpen, setIsPresetsOpen] = useState(false);
+  const [isEvolutionOpen, setIsEvolutionOpen] = useState(false);
+  const [isSketchbookOpen, setIsSketchbookOpen] = useState(false);
+  const [isSymbolismOpen, setIsSymbolismOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isPatternMode, setIsPatternMode] = useState(false);
 
   // Sync guide lines state with panZoom toggle
   useEffect(() => {
@@ -85,7 +93,7 @@ export function App() {
     return generateScene(recipe);
   }, [recipe]);
 
-  // Global hotkeys (R: randomize, G: toggle grid, F: fit)
+  // Global hotkeys (R: randomize, G: toggle grid, F: fit, T: tile pattern)
   useEffect(() => {
     const handleGlobalKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -97,6 +105,8 @@ export function App() {
         toggleGrid();
       } else if (e.key === "f" || e.key === "F") {
         fitToScreen();
+      } else if (e.key === "t" || e.key === "T") {
+        setIsPatternMode((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handleGlobalKey);
@@ -114,6 +124,8 @@ export function App() {
         onRedo={redo}
         onRandomizeSeed={randomizeSeed}
         onOpenPresets={() => setIsPresetsOpen(true)}
+        onOpenEvolution={() => setIsEvolutionOpen(true)}
+        onOpenSketchbook={() => setIsSketchbookOpen(true)}
         onOpenExport={() => setIsExportOpen(true)}
         onOpenAbout={() => setIsAboutOpen(true)}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
@@ -123,7 +135,7 @@ export function App() {
 
       {/* Main Studio Viewport */}
       <main className="relative flex-1 w-full h-full overflow-hidden">
-        {/* SVG Canvas Artboard */}
+        {/* Main Canvas Artboard */}
         <Canvas
           scene={scene}
           zoom={zoom}
@@ -136,31 +148,47 @@ export function App() {
           containerRef={containerRef}
         />
 
-        {/* Growth Animation Timeline Overlay (Top-Center) */}
-        <GrowthOverlay
-          progress={growthProgress}
-          isPlaying={isGrowthPlaying}
-          speed={growthSpeed}
-          prefersReducedMotion={prefersReducedMotion}
-          onPlay={playGrowth}
-          onPause={pauseGrowth}
-          onReplay={replayGrowth}
-          onSkipToEnd={skipGrowthToEnd}
-          onScrub={scrubGrowth}
-          onSpeedChange={setGrowthSpeed}
-        />
+        {/* Seamless Textile / Jali Repeat Grid Mode Overlay */}
+        {isPatternMode && (
+          <PatternTileOverlay
+            scene={scene}
+            zoom={zoom}
+            pan={pan}
+            tileSize={3}
+          />
+        )}
 
-        {/* Viewport Pan/Zoom Controls Overlay (Bottom-Left) */}
+        {/* Growth Animation Timeline Overlay (Top-Center) */}
+        {!isPatternMode && (
+          <GrowthOverlay
+            progress={growthProgress}
+            isPlaying={isGrowthPlaying}
+            speed={growthSpeed}
+            prefersReducedMotion={prefersReducedMotion}
+            onPlay={playGrowth}
+            onPause={pauseGrowth}
+            onReplay={replayGrowth}
+            onSkipToEnd={skipGrowthToEnd}
+            onScrub={scrubGrowth}
+            onSpeedChange={setGrowthSpeed}
+          />
+        )}
+
+        {/* Viewport Controls Overlay (Bottom-Left) */}
         <ControlsOverlay
           zoom={zoom}
           showGrid={showGrid}
           showGuides={showGuides}
+          isPatternMode={isPatternMode}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
           onFitToScreen={fitToScreen}
           onResetView={resetView}
           onToggleGrid={toggleGrid}
           onToggleGuides={toggleGuides}
+          onTogglePatternMode={() => setIsPatternMode(!isPatternMode)}
+          onOpenSymbolism={() => setIsSymbolismOpen(true)}
+          onOpenEvolution={() => setIsEvolutionOpen(true)}
         />
 
         {/* Natural Language Intent Bar (Bottom-Center) */}
@@ -209,6 +237,26 @@ export function App() {
         activeSeed={recipe.seed}
         onSelectPreset={loadRecipe}
         onClose={() => setIsPresetsOpen(false)}
+      />
+
+      <EvolutionModal
+        isOpen={isEvolutionOpen}
+        baseRecipe={recipe}
+        onSelectVariation={loadRecipe}
+        onClose={() => setIsEvolutionOpen(false)}
+      />
+
+      <SketchbookModal
+        isOpen={isSketchbookOpen}
+        currentRecipe={recipe}
+        onLoadRecipe={loadRecipe}
+        onClose={() => setIsSketchbookOpen(false)}
+      />
+
+      <SymbolismModal
+        isOpen={isSymbolismOpen}
+        recipe={recipe}
+        onClose={() => setIsSymbolismOpen(false)}
       />
 
       <AboutModal
