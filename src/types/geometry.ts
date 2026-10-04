@@ -5,11 +5,13 @@ export interface SVGPathElementData {
   d: string;
   stroke?: string;
   strokeWidth?: number;
+  strokeOpacity?: number;
   strokeDasharray?: string;
   strokeLinecap?: "round" | "square" | "butt";
   strokeLinejoin?: "round" | "miter" | "bevel";
   fill?: string;
   fillOpacity?: number;
+  opacity?: number;
   className?: string;
 }
 
@@ -20,9 +22,11 @@ export interface SVGCircleElementData {
   r: number;
   stroke?: string;
   strokeWidth?: number;
+  strokeOpacity?: number;
   strokeDasharray?: string;
   fill?: string;
   fillOpacity?: number;
+  opacity?: number;
 }
 
 export interface SVGPolygonElementData {
@@ -30,17 +34,22 @@ export interface SVGPolygonElementData {
   points: string;
   stroke?: string;
   strokeWidth?: number;
+  strokeOpacity?: number;
   fill?: string;
   fillOpacity?: number;
+  opacity?: number;
 }
+
+export type SVGElementData = SVGPathElementData | SVGCircleElementData | SVGPolygonElementData;
 
 export interface SVGGElementData {
   id: string;
   name: string;
   label: string;
   order: number;
-  elements: (SVGPathElementData | SVGCircleElementData | SVGPolygonElementData)[];
+  elements: SVGElementData[];
   transform?: string;
+  opacity?: number;
 }
 
 export interface GeneratedScene {

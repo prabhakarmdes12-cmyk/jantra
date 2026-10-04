@@ -38,6 +38,46 @@ input[type="range"] {
   cursor: pointer;
 }
 
+/* Horizontal strips (evolution gallery, breadcrumbs) hide their scrollbar */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Focus ring that respects the technical-studio look */
+*:focus-visible {
+  outline: 1px solid rgba(245, 158, 11, 0.6);
+  outline-offset: 1px;
+}
+
+/* Range thumbs: amber dot on a hairline track */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: 2px solid #09090b;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.35);
+  cursor: grab;
+}
+input[type="range"]::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: 2px solid #09090b;
+  cursor: grab;
+}
+
 /* Grid background pattern */
 .bg-dot-grid {
   background-image: radial-gradient(circle, #27272a 1px, transparent 1px);

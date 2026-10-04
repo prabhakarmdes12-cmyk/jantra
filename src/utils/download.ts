@@ -107,3 +107,20 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     }
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Friendly wrappers used by the studio Export Card                    */
+/* ------------------------------------------------------------------ */
+
+export function downloadSVG(svg: string, filename: string) {
+  downloadTextFile(svg, filename, "image/svg+xml;charset=utf-8");
+}
+
+export function downloadJSON(data: unknown, filename: string) {
+  downloadTextFile(JSON.stringify(data, null, 2), filename, "application/json");
+}
+
+export async function downloadPNG(svg: string, filename: string, width: number, height: number) {
+  const blob = await exportSceneToPNG(svg, width, height, 1, "transparent");
+  downloadBlob(blob, filename);
+}

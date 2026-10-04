@@ -1,9 +1,13 @@
-import { GeneratedScene, SVGPathElementData, SVGCircleElementData, SVGPolygonElementData } from "../types/geometry";
+import { GeneratedScene, SVGElementData, SVGPathElementData, SVGCircleElementData, SVGPolygonElementData } from "../types/geometry";
 import { JantraRecipe } from "../types/recipe";
 import { PreflightDiagnostic } from "../types/export";
 
+function round3(n: number): number {
+  return Math.round(n * 1000) / 1000;
+}
+
 function serializeElement(
-  el: SVGPathElementData | SVGCircleElementData | SVGPolygonElementData,
+  el: SVGElementData,
   minified = false,
   plotterMode = false
 ): string {
@@ -17,12 +21,14 @@ function serializeElement(
       attrs += ` stroke="#000000" stroke-width="0.3" fill="none"`;
     } else {
       if (p.stroke) attrs += ` stroke="${p.stroke}"`;
-      if (p.strokeWidth !== undefined) attrs += ` stroke-width="${p.strokeWidth}"`;
+      if (p.strokeWidth !== undefined) attrs += ` stroke-width="${round3(p.strokeWidth)}"`;
       if (p.strokeLinecap) attrs += ` stroke-linecap="${p.strokeLinecap}"`;
       if (p.strokeLinejoin) attrs += ` stroke-linejoin="${p.strokeLinejoin}"`;
       if (p.strokeDasharray) attrs += ` stroke-dasharray="${p.strokeDasharray}"`;
+      if (p.strokeOpacity !== undefined) attrs += ` stroke-opacity="${round3(p.strokeOpacity)}"`;
       attrs += ` fill="${p.fill || "none"}"`;
-      if (p.fillOpacity !== undefined) attrs += ` fill-opacity="${p.fillOpacity}"`;
+      if (p.fillOpacity !== undefined) attrs += ` fill-opacity="${round3(p.fillOpacity)}"`;
+      if (p.opacity !== undefined) attrs += ` opacity="${round3(p.opacity)}"`;
     }
 
     return `${indent}<path ${attrs} />${nl}`;
@@ -33,10 +39,12 @@ function serializeElement(
       attrs += ` stroke="#000000" stroke-width="0.3" fill="none"`;
     } else {
       if (c.stroke) attrs += ` stroke="${c.stroke}"`;
-      if (c.strokeWidth !== undefined) attrs += ` stroke-width="${c.strokeWidth}"`;
+      if (c.strokeWidth !== undefined) attrs += ` stroke-width="${round3(c.strokeWidth)}"`;
       if (c.strokeDasharray) attrs += ` stroke-dasharray="${c.strokeDasharray}"`;
+      if (c.strokeOpacity !== undefined) attrs += ` stroke-opacity="${round3(c.strokeOpacity)}"`;
       attrs += ` fill="${c.fill || "none"}"`;
-      if (c.fillOpacity !== undefined) attrs += ` fill-opacity="${c.fillOpacity}"`;
+      if (c.fillOpacity !== undefined) attrs += ` fill-opacity="${round3(c.fillOpacity)}"`;
+      if (c.opacity !== undefined) attrs += ` opacity="${round3(c.opacity)}"`;
     }
 
     return `${indent}<circle ${attrs} />${nl}`;
@@ -47,9 +55,10 @@ function serializeElement(
       attrs += ` stroke="#000000" stroke-width="0.3" fill="none"`;
     } else {
       if (poly.stroke) attrs += ` stroke="${poly.stroke}"`;
-      if (poly.strokeWidth !== undefined) attrs += ` stroke-width="${poly.strokeWidth}"`;
+      if (poly.strokeWidth !== undefined) attrs += ` stroke-width="${round3(poly.strokeWidth)}"`;
+      if (poly.strokeOpacity !== undefined) attrs += ` stroke-opacity="${round3(poly.strokeOpacity)}"`;
       attrs += ` fill="${poly.fill || "none"}"`;
-      if (poly.fillOpacity !== undefined) attrs += ` fill-opacity="${poly.fillOpacity}"`;
+      if (poly.fillOpacity !== undefined) attrs += ` fill-opacity="${round3(poly.fillOpacity)}"`;
     }
 
     return `${indent}<polygon ${attrs} />${nl}`;

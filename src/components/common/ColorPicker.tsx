@@ -32,7 +32,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <label className="text-xs text-zinc-300 font-medium">{label}</label>
-        <div className="flex items-center gap-1.5 font-mono text-[11px] text-zinc-300 bg-zinc-850 px-2 py-0.5 rounded border border-zinc-700/60">
+        <div className="flex items-center gap-1.5 font-mono text-[11px] text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700/60">
           <div
             className="w-3 h-3 rounded-full border border-zinc-600 shadow-inner"
             style={{ backgroundColor: value === "transparent" ? "transparent" : value }}
@@ -76,7 +76,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
         })}
 
         {/* Custom hex input */}
-        <label className="relative flex items-center justify-center w-6 h-6 rounded-md border border-dashed border-zinc-650 hover:border-zinc-400 cursor-pointer bg-zinc-800 text-zinc-400 hover:text-zinc-200">
+        <label className="relative flex items-center justify-center w-6 h-6 rounded-md border border-dashed border-zinc-700 hover:border-zinc-400 cursor-pointer bg-zinc-800 text-zinc-400 hover:text-zinc-200">
           <span className="text-[10px] font-mono">+</span>
           <input
             type="color"

@@ -7,6 +7,10 @@ export interface ArtisanPalette {
   secondaryStroke: string;
   accent: string;
   background: string;
+  /** Faint technical construction-line colour (defaults to electric cyan). */
+  construction?: string;
+  fill?: string;
+  fillOpacity?: number;
   paperTexture?: "dark_obsidian" | "handmade_wove" | "aged_palm_leaf" | "copper_plate" | "indigo_cotton" | "vintage_parchment";
 }
 

@@ -1,464 +1,479 @@
-import { JantraRecipe, PresetRecipe } from "../types/recipe";
+import { DetailFlags, GrammarFamily, JantraRecipe, PresetRecipe } from "../types/recipe";
+import { defaultDetailFor, ENGINE_VERSION } from "../engine/normalize";
 
-export const defaultRecipe: JantraRecipe = {
-  schemaVersion: "1.0",
-  engineVersion: "0.1.0",
-  grammar: {
-    id: "geometric-radial",
-    version: "0.1.0",
-  },
-  seed: "108",
-  canvas: {
-    width: 1600,
-    height: 1600,
-    background: "#09090b",
-    margin: 0.08,
-  },
-  parameters: {
-    symmetry: {
-      mode: "radial",
-      segments: 8,
+const CREATED = "2026-10-04T00:00:00.000Z";
+
+function detail(family: GrammarFamily, patch: Partial<DetailFlags> = {}): DetailFlags {
+  return { ...defaultDetailFor(family), ...patch };
+}
+
+export function makeRecipe(
+  family: GrammarFamily,
+  seed: string,
+  params: Partial<JantraRecipe["parameters"]>,
+  canvas: Partial<JantraRecipe["canvas"]> = {},
+  promptText = ""
+): JantraRecipe {
+  return {
+    schemaVersion: "1.1",
+    engineVersion: ENGINE_VERSION,
+    grammar: { family, id: `jantra-${family}`, version: ENGINE_VERSION },
+    seed,
+    canvas: {
+      width: 1600,
+      height: 1600,
+      background: "#09090b",
+      margin: 0.08,
+      ...canvas,
     },
-    rings: {
-      count: 5,
-      spacing: "harmonic",
-      showGuideLines: false,
+    parameters: {
+      symmetry: { mode: "radial", segments: 8, outerMultiplier: 1, asymmetry: 0 },
+      rings: { count: 5, spacing: "harmonic", showGuideLines: false },
+      recursion: { depth: 3, scale: 0.65 },
+      density: 0.38,
+      prana: 22,
+      line: { weight: 2.17, cap: "round", color: "#f4f4f5", dashPattern: "none" },
+      motifs: {
+        primary: "lotus_lobe",
+        secondary: "dot",
+        bindu: { radius: 13, style: "radiant" },
+        bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
+      },
+      detail: detail(family),
+      palette: {
+        stroke: "#f4f4f5",
+        secondaryStroke: "#71717a",
+        accent: "#f59e0b",
+        construction: "#06b6d4",
+        fill: "none",
+      },
+      ...params,
     },
-    recursion: {
-      depth: 3,
-      scale: 0.65,
+    provenance: {
+      aiInterpreted: false,
+      promptText,
+      lineageId: seed,
+      generation: 0,
+      createdAt: CREATED,
     },
-    density: 0.35,
-    prana: 0.06,
-    line: {
-      weight: 1.4,
-      cap: "round",
-      color: "#f4f4f5",
-      dashPattern: "none",
-    },
+  };
+}
+
+/** The composition JANTRA opens with. */
+export const defaultRecipe: JantraRecipe = makeRecipe(
+  "lotus",
+  "108",
+  {
+    symmetry: { mode: "radial", segments: 8, outerMultiplier: 2, asymmetry: 0 },
+    rings: { count: 6, spacing: "harmonic", showGuideLines: false },
+    recursion: { depth: 4, scale: 0.68 },
+    density: 0.42,
+    prana: 24,
+    line: { weight: 2.02, cap: "round", color: "#f4f4f5", dashPattern: "none" },
     motifs: {
       primary: "lotus_lobe",
       secondary: "dot",
-      bindu: {
-        radius: 8,
-        style: "radiant",
-      },
-      bhupura: {
-        enabled: true,
-        gates: 4,
-        steps: 2,
-        finials: true,
-      },
+      bindu: { radius: 15, style: "radiant" },
+      bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
     },
-    palette: {
-      stroke: "#f4f4f5",
-      secondaryStroke: "#71717a",
-      accent: "#f59e0b",
-      fill: "none",
-    },
+    detail: detail("lotus", { ribCount: 5 }),
   },
-  provenance: {
-    aiInterpreted: false,
-    promptText: "Default sacred lotus composition with harmonic radial rings and stepped bhupura",
-    createdAt: new Date().toISOString(),
-  },
-};
+  {},
+  "Eight-fold sacred lotus with filigree ribbing, stippled orbit bands and a stepped bhupura"
+);
 
 export const PRESETS: PresetRecipe[] = [
+  {
+    id: "ashta-padma",
+    name: "Ashta Padma",
+    sanskritName: "अष्टदल पद्म",
+    description:
+      "Eight-fold blooming lotus: three petal tiers with fanned internal veins, alternating stipple orbits and a two-step earth citadel.",
+    category: "floral",
+    recipe: defaultRecipe,
+  },
   {
     id: "sri-yantra",
     name: "Sri Yantra Mahameru",
     sanskritName: "श्री यन्त्र",
-    description: "The supreme archetype of sacred geometry: 9 interlocking Shiva & Shakti triangles forming 43 sub-triangles, nested 8 and 16-petal lotus tiers, and a 3-tier stepped earth citadel.",
+    description:
+      "Nine interlocking Shiva–Shakti triangles generating the navayoni lattice, ringed by 8 and 16 petal padma tiers and a degree dial.",
     category: "sacred",
-    recipe: {
-      ...defaultRecipe,
-      seed: "108",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 8 },
-        rings: { count: 6, spacing: "harmonic", showGuideLines: false },
-        recursion: { depth: 4, scale: 0.7 },
-        density: 0.45,
-        prana: 0.03,
-        line: { weight: 1.3, cap: "round", color: "#fef3c7" },
+    recipe: makeRecipe(
+      "yantra",
+      "9",
+      {
+        symmetry: { mode: "radial", segments: 8, outerMultiplier: 1, asymmetry: 0 },
+        rings: { count: 5, spacing: "harmonic", showGuideLines: false },
+        recursion: { depth: 3, scale: 0.72 },
+        density: 0.46,
+        prana: 8,
+        line: { weight: 2.02, cap: "butt", color: "#fef3c7" },
         motifs: {
           primary: "sri_yantra",
           secondary: "dot",
-          bindu: { radius: 6, style: "solid" },
+          bindu: { radius: 11, style: "triple_aura" },
           bhupura: { enabled: true, gates: 4, steps: 3, finials: true },
         },
+        detail: detail("yantra"),
         palette: {
           stroke: "#fef3c7",
+          secondaryStroke: "#a16207",
           accent: "#f59e0b",
+          construction: "#06b6d4",
           fill: "none",
         },
       },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Sri Yantra Mahameru Archetype",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
+      {},
+      "Sri Yantra Mahameru archetype"
+    ),
   },
   {
-    id: "ashta-padma",
-    name: "Ashta Padma (8-Fold Lotus)",
-    sanskritName: "अष्टदल पद्म",
-    description: "Multi-tiered parametric lotus petals with harmonic radial progression and radiant solar bindu origin.",
-    category: "floral",
-    recipe: {
-      ...defaultRecipe,
-      seed: "1008",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 8 },
-        rings: { count: 5, spacing: "harmonic", showGuideLines: false },
-        recursion: { depth: 3, scale: 0.65 },
-        density: 0.38,
-        prana: 0.05,
-        line: { weight: 1.4, cap: "round", color: "#f5f5f7" },
-        motifs: {
-          primary: "lotus_double",
-          secondary: "circle",
-          bindu: { radius: 10, style: "radiant" },
-          bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
-        },
-        palette: {
-          stroke: "#f5f5f7",
-          accent: "#fbbf24",
-          fill: "none",
-        },
-      },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Ashta Padma 8-fold lotus",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
-  },
-  {
-    id: "sahasrara-crown",
-    name: "Sahasrara (Crown Chakra)",
-    sanskritName: "सहस्रार चक्र",
-    description: "Dense 32-segment blossoming thousand-petaled lotus with triple concentric radiant aura rings.",
-    category: "sacred",
-    recipe: {
-      ...defaultRecipe,
-      seed: "1000",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 32 },
-        rings: { count: 7, spacing: "golden", showGuideLines: false },
-        recursion: { depth: 4, scale: 0.72 },
-        density: 0.62,
-        prana: 0.04,
-        line: { weight: 1.0, cap: "round", color: "#fdf4ff" },
-        motifs: {
-          primary: "lotus_pointed",
-          secondary: "dot",
-          bindu: { radius: 12, style: "triple_aura" },
-          bhupura: { enabled: false, gates: 4, steps: 1 },
-        },
-        palette: {
-          stroke: "#fdf4ff",
-          accent: "#e879f9",
-          fill: "none",
-        },
-      },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Sahasrara 32-segment crown lotus",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
-  },
-  {
-    id: "sikku-kolam",
-    name: "Brahma Mudi Sikku Kolam",
-    sanskritName: "ब्रह्म मुडि कोलम",
-    description: "Continuous South Indian threshold knotwork weaving unbroken symmetrical loops around concentric radial pulli dots.",
-    category: "kolam",
-    recipe: {
-      ...defaultRecipe,
-      seed: "777",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 8 },
-        rings: { count: 4, spacing: "linear", showGuideLines: false },
-        recursion: { depth: 2, scale: 0.6 },
-        density: 0.45,
-        prana: 0.12,
-        line: { weight: 1.8, cap: "round", color: "#fef08a" },
-        motifs: {
-          primary: "kolam_knot",
-          secondary: "dot",
-          bindu: { radius: 8, style: "solid" },
-          bhupura: { enabled: false, gates: 4, steps: 1 },
-        },
-        palette: {
-          stroke: "#fef08a",
-          accent: "#f97316",
-          fill: "none",
-        },
-      },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Brahma Mudi Sikku Kolam continuous loop",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
-  },
-  {
-    id: "surya-mandala",
-    name: "Surya Mandala (Modhera Sun Temple)",
-    sanskritName: "सूर्य मण्डल",
-    description: "12-segment radiating solar vectors inspired by the Sun Temple at Modhera with nested star polygons and high-density perimeter ticks.",
-    category: "archetype",
-    recipe: {
-      ...defaultRecipe,
-      seed: "432",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 12 },
-        rings: { count: 7, spacing: "exponential", showGuideLines: true },
-        recursion: { depth: 4, scale: 0.62 },
-        density: 0.65,
-        prana: 0.04,
-        line: { weight: 1.2, cap: "round", color: "#fde68a" },
-        motifs: {
-          primary: "star",
-          secondary: "flame",
-          bindu: { radius: 14, style: "radiant" },
-          bhupura: { enabled: false, gates: 4, steps: 1 },
-        },
-        palette: {
-          stroke: "#fde68a",
-          accent: "#f59e0b",
-          fill: "none",
-        },
-      },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Surya Mandala Solar Radiance",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
-  },
-  {
-    id: "cosmic-shatkona",
-    name: "Cosmic Shatkona (6-Fold Hexagram)",
-    sanskritName: "षट्कोण यन्त्र",
-    description: "Geometric union of Shiva and Shakti upward and downward equilateral triangles with nested harmonic rings and cardinal spokes.",
-    category: "sacred",
-    recipe: {
-      ...defaultRecipe,
-      seed: "360",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 6 },
-        rings: { count: 4, spacing: "harmonic", showGuideLines: true },
-        recursion: { depth: 3, scale: 0.68 },
-        density: 0.32,
-        prana: 0.02,
-        line: { weight: 1.5, cap: "round", color: "#e0f2fe" },
-        motifs: {
-          primary: "triangle",
-          secondary: "cross",
-          bindu: { radius: 7, style: "hollow" },
-          bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
-        },
-        palette: {
-          stroke: "#e0f2fe",
-          accent: "#38bdf8",
-          fill: "none",
-        },
-      },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Cosmic Shatkona 6-fold hexagram",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
-  },
-  {
-    id: "navagraha-orbit",
-    name: "Navagraha (9 Planetary Orbits)",
-    sanskritName: "नवग्रह मण्डल",
-    description: "9-fold sacred planetary geometry with Fibonacci golden ratio rings and teardrop radiance.",
-    category: "archetype",
-    recipe: {
-      ...defaultRecipe,
-      seed: "999",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 9 },
-        rings: { count: 6, spacing: "golden", showGuideLines: true },
-        recursion: { depth: 3, scale: 0.68 },
-        density: 0.42,
-        prana: 0.04,
-        line: { weight: 1.3, cap: "round", color: "#fef08a" },
-        motifs: {
-          primary: "lotus_pointed",
-          secondary: "teardrop",
-          bindu: { radius: 11, style: "triple_aura" },
-          bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
-        },
-        palette: {
-          stroke: "#fef08a",
-          accent: "#f59e0b",
-          fill: "none",
-        },
-      },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Navagraha 9 planetary orbits",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
-  },
-  {
-    id: "anahata-heart",
-    name: "Anahata (Heart Chakra)",
-    sanskritName: "अनाहत चक्र",
-    description: "12-petaled emerald lotus enclosing the intersecting upward (masculine) and downward (feminine) triangles.",
-    category: "sacred",
-    recipe: {
-      ...defaultRecipe,
-      seed: "1212",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 12 },
-        rings: { count: 5, spacing: "harmonic", showGuideLines: false },
-        recursion: { depth: 3, scale: 0.65 },
-        density: 0.35,
-        prana: 0.05,
-        line: { weight: 1.3, cap: "round", color: "#ecfdf5" },
-        motifs: {
-          primary: "lotus_lobe",
-          secondary: "triangle",
-          bindu: { radius: 8, style: "radiant" },
-          bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
-        },
-        palette: {
-          stroke: "#ecfdf5",
-          accent: "#10b981",
-          fill: "none",
-        },
-      },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Anahata 12-petaled heart chakra",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
-  },
-  {
-    id: "architectural-diamond",
-    name: "Rajasthani Jali Lattice",
-    sanskritName: "जाली विन्यास",
-    description: "Crisp 16-segment lozenges and diamond facets with zero prana for pure structural architectural drafting.",
+    id: "temple-gate",
+    name: "Temple Gate Plan",
+    sanskritName: "गोपुरम्",
+    description:
+      "Nested prakara enclosures, a mandapa pillar grid and the garbhagriha sanctum, framed by triple-stepped gopuram gateways.",
     category: "architectural",
-    recipe: {
-      ...defaultRecipe,
-      seed: "2048",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 16 },
-        rings: { count: 6, spacing: "linear", showGuideLines: true },
-        recursion: { depth: 4, scale: 0.72 },
-        density: 0.52,
-        prana: 0.0,
-        line: { weight: 1.1, cap: "square", color: "#f5f5f5" },
+    recipe: makeRecipe(
+      "temple",
+      "432",
+      {
+        symmetry: { mode: "grid", segments: 8, outerMultiplier: 1, asymmetry: 0 },
+        rings: { count: 5, spacing: "linear", showGuideLines: false },
+        recursion: { depth: 3, scale: 0.7 },
+        density: 0.44,
+        prana: 10,
+        line: { weight: 2.33, cap: "butt", color: "#fde68a" },
         motifs: {
-          primary: "diamond",
-          secondary: "triangle",
-          bindu: { radius: 6, style: "hollow" },
+          primary: "chevron",
+          secondary: "cross",
+          bindu: { radius: 12, style: "solid" },
           bhupura: { enabled: true, gates: 4, steps: 3, finials: true },
         },
+        detail: detail("temple"),
         palette: {
-          stroke: "#f5f5f5",
-          accent: "#a1a1aa",
+          stroke: "#fde68a",
+          secondaryStroke: "#92400e",
+          accent: "#f59e0b",
+          construction: "#06b6d4",
           fill: "none",
         },
       },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Rajasthani Jali Lattice Diamond Grid",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
+      {},
+      "Dravidian temple plan with layered gopuram gates"
+    ),
   },
   {
-    id: "minimalist-bindu",
-    name: "Meditative Bindu Aura",
-    sanskritName: "बिन्दु ध्यान",
-    description: "Quiet, contemplative minimalism with ultra-clean fine lines and expansive negative space.",
-    category: "minimal",
-    recipe: {
-      ...defaultRecipe,
-      seed: "1",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 8 },
-        rings: { count: 3, spacing: "exponential", showGuideLines: false },
-        recursion: { depth: 1, scale: 0.5 },
-        density: 0.12,
-        prana: 0.01,
-        line: { weight: 0.9, cap: "round", color: "#f4f4f5" },
+    id: "mandala-24",
+    name: "Chakra Mandala",
+    sanskritName: "चक्र मण्डल",
+    description:
+      "Twelve alternating registers — corolla, serration, scallop, comb — pinned by a hundred celestial intersection nodes.",
+    category: "sacred",
+    recipe: makeRecipe(
+      "mandala",
+      "1008",
+      {
+        symmetry: { mode: "radial", segments: 12, outerMultiplier: 2, asymmetry: 0 },
+        rings: { count: 8, spacing: "harmonic", showGuideLines: false },
+        recursion: { depth: 4, scale: 0.68 },
+        density: 0.58,
+        prana: 30,
+        line: { weight: 1.71, cap: "round", color: "#f4f4f5" },
         motifs: {
-          primary: "petal",
-          secondary: "none",
-          bindu: { radius: 12, style: "radiant" },
-          bhupura: { enabled: false, gates: 4, steps: 1 },
-        },
-        palette: {
-          stroke: "#f4f4f5",
-          accent: "#e11d48",
-          fill: "none",
-        },
-      },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Meditative Bindu Aura Minimalist",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
-  },
-  {
-    id: "organic-kolam",
-    name: "Vital Kolam (High Prana)",
-    sanskritName: "प्राण कोलम",
-    description: "Organic, living human imperfection with soft curves, continuous line flow, and traditional threshold rhythm.",
-    category: "kolam",
-    recipe: {
-      ...defaultRecipe,
-      seed: "72",
-      parameters: {
-        ...defaultRecipe.parameters,
-        symmetry: { mode: "radial", segments: 8 },
-        rings: { count: 4, spacing: "linear", showGuideLines: false },
-        recursion: { depth: 2, scale: 0.6 },
-        density: 0.28,
-        prana: 0.18,
-        line: { weight: 2.0, cap: "round", color: "#fef08a" },
-        motifs: {
-          primary: "petal",
+          primary: "lotus_pointed",
           secondary: "dot",
-          bindu: { radius: 8, style: "solid" },
-          bhupura: { enabled: false, gates: 4, steps: 1 },
+          bindu: { radius: 13, style: "triple_aura" },
+          bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
         },
+        detail: detail("mandala"),
+      },
+      {},
+      "Dense twelve-fold chakra mandala"
+    ),
+  },
+  {
+    id: "prana-bloom",
+    name: "Prana Bloom",
+    sanskritName: "प्राण पुष्प",
+    description:
+      "Logarithmic tendrils sweeping out of the bindu with branching leaflets — prana held at 78, organic vitality.",
+    category: "floral",
+    recipe: makeRecipe(
+      "organic",
+      "555",
+      {
+        symmetry: { mode: "radial", segments: 7, outerMultiplier: 1, asymmetry: 4 },
+        rings: { count: 4, spacing: "golden", showGuideLines: false },
+        recursion: { depth: 2, scale: 0.7 },
+        density: 0.5,
+        prana: 78,
+        line: { weight: 2.33, cap: "round", color: "#fff7ed" },
+        motifs: {
+          primary: "petal",
+          secondary: "teardrop",
+          bindu: { radius: 16, style: "radiant" },
+          bhupura: { enabled: false, gates: 4, steps: 1, finials: false },
+        },
+        detail: detail("organic"),
         palette: {
-          stroke: "#fef08a",
-          accent: "#f97316",
+          stroke: "#fff7ed",
+          secondaryStroke: "#9a6a3a",
+          accent: "#fb923c",
+          construction: "#06b6d4",
           fill: "none",
         },
       },
-      provenance: {
-        aiInterpreted: false,
-        promptText: "Vital Kolam with living Prana",
-        createdAt: "2026-10-02T00:00:00.000Z",
-      },
-    },
+      {},
+      "Seven-armed organic bloom at high prana"
+    ),
   },
+  {
+    id: "guilloche-jali",
+    name: "Guilloché Jali",
+    sanskritName: "जाली अलंकार",
+    description:
+      "Woven hypotrochoid bands, a pierced jali screen and micro-serrations — the highest line-frequency composition in the library.",
+    category: "kolam",
+    recipe: makeRecipe(
+      "ornamental",
+      "2048",
+      {
+        symmetry: { mode: "radial", segments: 16, outerMultiplier: 2, asymmetry: 0 },
+        rings: { count: 9, spacing: "linear", showGuideLines: false },
+        recursion: { depth: 4, scale: 0.72 },
+        density: 0.78,
+        prana: 14,
+        line: { weight: 1.32, cap: "round", color: "#e4e4e7" },
+        motifs: {
+          primary: "lotus_pointed",
+          secondary: "dot",
+          bindu: { radius: 11, style: "radiant" },
+          bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
+        },
+        detail: detail("ornamental"),
+      },
+      {},
+      "Maximum-density guilloché and jali weave"
+    ),
+  },
+  {
+    id: "shunya",
+    name: "Shunya Poster",
+    sanskritName: "शून्य",
+    description:
+      "Two decisive rings, five petals and one luminous bindu. Everything else is negative space doing the work.",
+    category: "minimal",
+    recipe: makeRecipe(
+      "minimal",
+      "1",
+      {
+        symmetry: { mode: "radial", segments: 5, outerMultiplier: 1, asymmetry: 0 },
+        rings: { count: 2, spacing: "harmonic", showGuideLines: false },
+        recursion: { depth: 0, scale: 0.65 },
+        density: 0.1,
+        prana: 6,
+        line: { weight: 3.72, cap: "round", color: "#fafafa" },
+        motifs: {
+          primary: "lotus_pointed",
+          secondary: "none",
+          bindu: { radius: 24, style: "radiant" },
+          bhupura: { enabled: false, gates: 4, steps: 1, finials: false },
+        },
+        detail: detail("minimal"),
+      },
+      {},
+      "Poster-grade minimal composition"
+    ),
+  },
+  {
+    id: "hybrid-24",
+    name: "Hybrid Drift",
+    sanskritName: "प्रयोग",
+    description:
+      "An 8-fold core expanding to a 24-fold outer register, with interrupted arcs, off-axis satellite rosettes and a 9° drift.",
+    category: "archetype",
+    recipe: makeRecipe(
+      "experimental",
+      "73",
+      {
+        symmetry: { mode: "hybrid", segments: 8, outerMultiplier: 3, asymmetry: 9 },
+        rings: { count: 6, spacing: "golden", showGuideLines: false },
+        recursion: { depth: 3, scale: 0.66 },
+        density: 0.55,
+        prana: 56,
+        line: { weight: 1.86, cap: "round", color: "#e0f2fe" },
+        motifs: {
+          primary: "star",
+          secondary: "triangle",
+          bindu: { radius: 13, style: "triple_aura" },
+          bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
+        },
+        detail: detail("experimental"),
+        palette: {
+          stroke: "#e0f2fe",
+          secondaryStroke: "#0e7490",
+          accent: "#f59e0b",
+          construction: "#06b6d4",
+          fill: "none",
+        },
+      },
+      {},
+      "Hybrid 8 → 24 fold experimental drift"
+    ),
+  },
+  {
+    id: "kumkum-padma",
+    name: "Kumkum Padma",
+    sanskritName: "कुंकुम पद्म",
+    description:
+      "Sixteen-petal lotus in vermillion and bone white with deep ruby construction lines — a festival alpana.",
+    category: "floral",
+    recipe: makeRecipe(
+      "lotus",
+      "16",
+      {
+        symmetry: { mode: "radial", segments: 16, outerMultiplier: 1, asymmetry: 0 },
+        rings: { count: 7, spacing: "golden", showGuideLines: false },
+        recursion: { depth: 5, scale: 0.7 },
+        density: 0.52,
+        prana: 44,
+        line: { weight: 1.78, cap: "round", color: "#fff1f2" },
+        motifs: {
+          primary: "lotus_double",
+          secondary: "flame",
+          bindu: { radius: 14, style: "triple_aura" },
+          bhupura: { enabled: true, gates: 4, steps: 3, finials: true },
+        },
+        detail: detail("lotus", { ribCount: 7 }),
+        palette: {
+          stroke: "#fff1f2",
+          secondaryStroke: "#9f1239",
+          accent: "#f43f5e",
+          construction: "#06b6d4",
+          fill: "none",
+        },
+      },
+      {},
+      "Sixteen-fold kumkum lotus"
+    ),
+  },
+  {
+    id: "navagraha",
+    name: "Navagraha Dial",
+    sanskritName: "नवग्रह",
+    description:
+      "A nine-fold instrument plate: degree graduations, angle indicators and stellated planetary registers on an obsidian ground.",
+    category: "archetype",
+    recipe: makeRecipe(
+      "yantra",
+      "27",
+      {
+        symmetry: { mode: "radial", segments: 9, outerMultiplier: 2, asymmetry: 0 },
+        rings: { count: 7, spacing: "linear", showGuideLines: true },
+        recursion: { depth: 4, scale: 0.74 },
+        density: 0.6,
+        prana: 18,
+        line: { weight: 1.63, cap: "butt", color: "#f8fafc" },
+        motifs: {
+          primary: "star",
+          secondary: "dot",
+          bindu: { radius: 12, style: "radiant" },
+          bhupura: { enabled: true, gates: 4, steps: 2, finials: false },
+        },
+        detail: detail("yantra", { ribCount: 6 }),
+        palette: {
+          stroke: "#f8fafc",
+          secondaryStroke: "#64748b",
+          accent: "#f59e0b",
+          construction: "#06b6d4",
+          fill: "none",
+        },
+      },
+      {},
+      "Nine-fold navagraha instrument dial"
+    ),
+  },
+  {
+    id: "sanctum-grid",
+    name: "Sanctum Grid",
+    sanskritName: "गर्भगृह",
+    description:
+      "A measured vastu plan: orthogonal prakara walls alternating with 45° enclosures and three pillar colonnades.",
+    category: "architectural",
+    recipe: makeRecipe(
+      "temple",
+      "64",
+      {
+        symmetry: { mode: "grid", segments: 12, outerMultiplier: 1, asymmetry: 0 },
+        rings: { count: 6, spacing: "linear", showGuideLines: true },
+        recursion: { depth: 4, scale: 0.72 },
+        density: 0.68,
+        prana: 4,
+        line: { weight: 1.94, cap: "butt", color: "#e2e8f0" },
+        motifs: {
+          primary: "diamond",
+          secondary: "cross",
+          bindu: { radius: 11, style: "hollow" },
+          bhupura: { enabled: true, gates: 4, steps: 3, finials: true },
+        },
+        detail: detail("temple", { ribCount: 3 }),
+        palette: {
+          stroke: "#e2e8f0",
+          secondaryStroke: "#475569",
+          accent: "#f59e0b",
+          construction: "#06b6d4",
+          fill: "none",
+        },
+      },
+      {},
+      "Vastu purusha sanctum grid"
+    ),
+  },
+  {
+    id: "coloring-sheet",
+    name: "Coloring Plate",
+    sanskritName: "रंग पत्र",
+    description:
+      "High-contrast black line work on pure white — ready to print, colour by hand, or hand to a pen plotter.",
+    category: "minimal",
+    recipe: makeRecipe(
+      "mandala",
+      "777",
+      {
+        symmetry: { mode: "radial", segments: 10, outerMultiplier: 1, asymmetry: 0 },
+        rings: { count: 6, spacing: "harmonic", showGuideLines: false },
+        recursion: { depth: 3, scale: 0.68 },
+        density: 0.4,
+        prana: 12,
+        line: { weight: 2.79, cap: "round", color: "#18181b" },
+        motifs: {
+          primary: "lotus_lobe",
+          secondary: "dot",
+          bindu: { radius: 14, style: "hollow" },
+          bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
+        },
+        detail: detail("mandala", { construction: false, ribCount: 4 }),
+        palette: {
+          stroke: "#18181b",
+          secondaryStroke: "#52525b",
+          accent: "#a16207",
+          construction: "#94a3b8",
+          fill: "none",
+        },
+      },
+      { background: "#ffffff" },
+      "Printable coloring plate"
+    ),
+  },
+];
+
+/** Quick prompt chips surfaced on the left sidebar. */
+export const PROMPT_CHIPS: Array<{ label: string; prompt: string; presetId?: string }> = [
+  { label: "Sri Yantra", prompt: "sri yantra nine interlocking triangles with stepped bhupura", presetId: "sri-yantra" },
+  { label: "Temple Gate", prompt: "architectural temple gate plan with layered stepped lintels", presetId: "temple-gate" },
+  { label: "Lotus Grid", prompt: "sixteen fold lotus grid with fine internal veins", presetId: "kumkum-padma" },
+  { label: "Minimal Poster", prompt: "minimal poster geometry with a bold luminous bindu", presetId: "shunya" },
+  { label: "Jali Weave", prompt: "dense ornamental guilloche jali weave", presetId: "guilloche-jali" },
 ];

@@ -1,275 +1,113 @@
-import { useMemo, useState, useEffect } from "react";
-import { useRecipe } from "./hooks/useRecipe";
-import { usePanZoom } from "./hooks/usePanZoom";
-import { useGrowthAnimation } from "./hooks/useGrowthAnimation";
+import { useCallback, useMemo, useState } from "react";
+import { GrammarFamily, JantraRecipe } from "./types/recipe";
 import { generateScene } from "./engine/generator";
-import { Header } from "./components/layout/Header";
-import { Footer } from "./components/layout/Footer";
-import { Canvas } from "./components/canvas/Canvas";
-import { GrowthOverlay } from "./components/canvas/GrowthOverlay";
-import { ControlsOverlay } from "./components/canvas/ControlsOverlay";
-import { PatternTileOverlay } from "./components/canvas/PatternTileOverlay";
-import { IntentBar } from "./components/intent/IntentBar";
-import { Inspector } from "./components/inspector/Inspector";
-import { ExportModal } from "./components/export/ExportModal";
-import { PresetsModal } from "./components/inspector/PresetsModal";
-import { EvolutionModal } from "./components/inspector/EvolutionModal";
-import { SketchbookModal } from "./components/inspector/SketchbookModal";
-import { SymbolismModal } from "./components/common/SymbolismModal";
-import { AboutModal } from "./components/common/AboutModal";
-import { KeyboardShortcutsModal } from "./components/common/KeyboardShortcutsModal";
+import { useRecipe } from "./hooks/useRecipe";
+import { useGrowthAnimation } from "./hooks/useGrowthAnimation";
+import { TopBar, StudioMode } from "./components/layout/TopBar";
+import { GrammarRail } from "./components/studio/GrammarRail";
+import { Viewport } from "./components/studio/Viewport";
+import { EvolutionGallery } from "./components/studio/EvolutionGallery";
+import { InspectorRail } from "./components/inspector/InspectorRail";
+import { PresetLibrary } from "./components/studio/PresetLibrary";
 
-export function App() {
-  const {
-    recipe,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    updateSeed,
-    randomizeSeed,
-    updateSymmetry,
-    updateRings,
-    updateRecursion,
-    updateDensity,
-    updatePrana,
-    updateLine,
-    updateMotifs,
-    updatePalette,
-    updateCanvas,
-    loadRecipe,
-    resetToDefault,
-  } = useRecipe();
+export default function App() {
+  const controls = useRecipe();
+  const { recipe } = controls;
 
-  const {
-    zoom,
-    pan,
-    isDragging,
-    showGrid,
-    showGuides,
-    containerRef,
-    handlers,
-    zoomIn,
-    zoomOut,
-    resetView,
-    fitToScreen,
-    toggleGrid,
-    toggleGuides,
-  } = usePanZoom();
+  const [mode, setMode] = useState<StudioMode>("create");
+  const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
+  const [showFrame, setShowFrame] = useState(false);
+  const [presetsOpen, setPresetsOpen] = useState(false);
+  const [sketchbook, setSketchbook] = useState<JantraRecipe[]>([]);
 
-  const {
-    progress: growthProgress,
-    isPlaying: isGrowthPlaying,
-    speed: growthSpeed,
-    prefersReducedMotion,
-    play: playGrowth,
-    pause: pauseGrowth,
-    replay: replayGrowth,
-    skipToEnd: skipGrowthToEnd,
-    scrub: scrubGrowth,
-    setSpeed: setGrowthSpeed,
-  } = useGrowthAnimation(recipe.seed);
+  const growth = useGrowthAnimation(String(recipe.seed));
 
-  // Modals and view mode state
-  const [isInspectorOpen, setIsInspectorOpen] = useState(true);
-  const [isExportOpen, setIsExportOpen] = useState(false);
-  const [isPresetsOpen, setIsPresetsOpen] = useState(false);
-  const [isEvolutionOpen, setIsEvolutionOpen] = useState(false);
-  const [isSketchbookOpen, setIsSketchbookOpen] = useState(false);
-  const [isSymbolismOpen, setIsSymbolismOpen] = useState(false);
-  const [isAboutOpen, setIsAboutOpen] = useState(false);
-  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const [isPatternMode, setIsPatternMode] = useState(false);
+  const scene = useMemo(() => generateScene(recipe), [recipe]);
 
-  // Sync guide lines state with panZoom toggle
-  useEffect(() => {
-    if (recipe.parameters.rings.showGuideLines !== showGuides) {
-      updateRings({ showGuideLines: showGuides });
-    }
-  }, [showGuides, recipe.parameters.rings.showGuideLines, updateRings]);
+  const toggleLayer = useCallback((id: string) => {
+    setHiddenLayers((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
-  // Procedurally generate the SVG scene
-  const scene = useMemo(() => {
-    return generateScene(recipe);
+  const selectFamily = useCallback((family: GrammarFamily) => controls.setFamily(family), [controls]);
+
+  const applyRecipe = useCallback((next: JantraRecipe) => controls.loadRecipe(next), [controls]);
+
+  const saveToSketchbook = useCallback(() => {
+    setSketchbook((prev) => (prev.some((r) => String(r.seed) === String(recipe.seed)) ? prev : [recipe, ...prev].slice(0, 24)));
   }, [recipe]);
 
-  // Global hotkeys (R: randomize, G: toggle grid, F: fit, T: tile pattern)
-  useEffect(() => {
-    const handleGlobalKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-      if (e.key === "r" || e.key === "R") {
-        randomizeSeed();
-      } else if (e.key === "g" || e.key === "G") {
-        toggleGrid();
-      } else if (e.key === "f" || e.key === "F") {
-        fitToScreen();
-      } else if (e.key === "t" || e.key === "T") {
-        setIsPatternMode((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", handleGlobalKey);
-    return () => window.removeEventListener("keydown", handleGlobalKey);
-  }, [randomizeSeed, toggleGrid, fitToScreen]);
-
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-[#09090b] text-zinc-100 font-sans">
-      {/* Top Header */}
-      <Header
+    <div className="h-screen w-screen flex flex-col bg-[#09090b] text-zinc-200 overflow-hidden antialiased">
+      <TopBar
         recipe={recipe}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={undo}
-        onRedo={redo}
-        onRandomizeSeed={randomizeSeed}
-        onOpenPresets={() => setIsPresetsOpen(true)}
-        onOpenEvolution={() => setIsEvolutionOpen(true)}
-        onOpenSketchbook={() => setIsSketchbookOpen(true)}
-        onOpenExport={() => setIsExportOpen(true)}
-        onOpenAbout={() => setIsAboutOpen(true)}
-        onOpenShortcuts={() => setIsShortcutsOpen(true)}
-        isInspectorOpen={isInspectorOpen}
-        onToggleInspector={() => setIsInspectorOpen((open) => !open)}
+        mode={mode}
+        onModeChange={setMode}
+        onSeedChange={controls.updateSeed}
+        onRandomSeed={controls.randomizeSeed}
+        onUndo={controls.undo}
+        onRedo={controls.redo}
+        canUndo={controls.canUndo}
+        canRedo={controls.canRedo}
+        onOpenPresets={() => setPresetsOpen(true)}
       />
 
-      {/* Main Studio Viewport */}
-      <main className="relative flex-1 w-full h-full overflow-hidden">
-        {/* Main Canvas Artboard */}
-        <Canvas
-          scene={scene}
-          zoom={zoom}
-          pan={pan}
-          isDragging={isDragging}
-          showGrid={showGrid}
-          growthProgress={growthProgress}
-          glowEffect={recipe.canvas.glowEffect}
-          handlers={handlers}
-          containerRef={containerRef}
-        />
+      <div className="flex-1 min-h-0 flex">
+        {mode === "create" && (
+          <GrammarRail
+            active={recipe.grammar.family}
+            recipe={recipe}
+            onSelectFamily={selectFamily}
+            onApplyRecipe={applyRecipe}
+            onOpenPresets={() => setPresetsOpen(true)}
+          />
+        )}
 
-        {/* Seamless Textile / Jali Repeat Grid Mode Overlay */}
-        {isPatternMode && (
-          <PatternTileOverlay
+        <main className="flex-1 min-w-0 flex flex-col">
+          <Viewport
             scene={scene}
-            zoom={zoom}
-            pan={pan}
-            tileSize={3}
+            recipe={recipe}
+            growth={growth.progress}
+            isGrowing={growth.isPlaying}
+            onReplayGrowth={growth.replay}
+            hiddenLayers={hiddenLayers}
+            showFrame={showFrame}
+            onToggleFrame={() => setShowFrame((v) => !v)}
           />
-        )}
-
-        {/* Growth Animation Timeline Overlay (Top-Center) */}
-        {!isPatternMode && (
-          <GrowthOverlay
-            progress={growthProgress}
-            isPlaying={isGrowthPlaying}
-            speed={growthSpeed}
-            prefersReducedMotion={prefersReducedMotion}
-            onPlay={playGrowth}
-            onPause={pauseGrowth}
-            onReplay={replayGrowth}
-            onSkipToEnd={skipGrowthToEnd}
-            onScrub={scrubGrowth}
-            onSpeedChange={setGrowthSpeed}
+          <EvolutionGallery
+            recipe={recipe}
+            onSelect={applyRecipe}
+            onNewSeed={controls.randomizeSeed}
+            onSave={saveToSketchbook}
+            savedCount={sketchbook.length}
           />
-        )}
+        </main>
 
-        {/* Viewport Controls Overlay (Bottom-Left) */}
-        <ControlsOverlay
-          zoom={zoom}
-          showGrid={showGrid}
-          showGuides={showGuides}
-          isPatternMode={isPatternMode}
-          onZoomIn={zoomIn}
-          onZoomOut={zoomOut}
-          onFitToScreen={fitToScreen}
-          onResetView={resetView}
-          onToggleGrid={toggleGrid}
-          onToggleGuides={toggleGuides}
-          onTogglePatternMode={() => setIsPatternMode(!isPatternMode)}
-          onOpenSymbolism={() => setIsSymbolismOpen(true)}
-          onOpenEvolution={() => setIsEvolutionOpen(true)}
-        />
-
-        {/* Natural Language Intent Bar (Bottom-Center) */}
-        <div className="absolute bottom-4 left-0 right-0 z-20 pointer-events-auto">
-          <IntentBar
-            currentRecipe={recipe}
-            onApplyRecipe={loadRecipe}
-          />
-        </div>
-
-        {/* Visual Grammar Inspector (Floating Right Sidebar) */}
-        <Inspector
+        <InspectorRail
+          mode={mode}
           recipe={recipe}
-          isOpen={isInspectorOpen}
-          onToggleOpen={() => setIsInspectorOpen((open) => !open)}
-          onUpdateSeed={updateSeed}
-          onRandomizeSeed={randomizeSeed}
-          onUpdateSymmetry={updateSymmetry}
-          onUpdateRings={updateRings}
-          onUpdateRecursion={updateRecursion}
-          onUpdateDensity={updateDensity}
-          onUpdatePrana={updatePrana}
-          onUpdateLine={updateLine}
-          onUpdateMotifs={updateMotifs}
-          onUpdatePalette={updatePalette}
-          onUpdateCanvas={updateCanvas}
-          onResetToDefault={resetToDefault}
-          onOpenPresets={() => setIsPresetsOpen(true)}
+          scene={scene}
+          controls={controls}
+          hiddenLayers={hiddenLayers}
+          onToggleLayer={toggleLayer}
         />
-      </main>
+      </div>
 
-      {/* Bottom Status Bar */}
-      <Footer scene={scene} recipe={recipe} />
-
-      {/* Modals */}
-      <ExportModal
-        isOpen={isExportOpen}
-        recipe={recipe}
-        scene={scene}
-        onClose={() => setIsExportOpen(false)}
-        onImportRecipe={loadRecipe}
-      />
-
-      <PresetsModal
-        isOpen={isPresetsOpen}
-        activeSeed={recipe.seed}
-        onSelectPreset={loadRecipe}
-        onClose={() => setIsPresetsOpen(false)}
-      />
-
-      <EvolutionModal
-        isOpen={isEvolutionOpen}
-        baseRecipe={recipe}
-        onSelectVariation={loadRecipe}
-        onClose={() => setIsEvolutionOpen(false)}
-      />
-
-      <SketchbookModal
-        isOpen={isSketchbookOpen}
-        currentRecipe={recipe}
-        onLoadRecipe={loadRecipe}
-        onClose={() => setIsSketchbookOpen(false)}
-      />
-
-      <SymbolismModal
-        isOpen={isSymbolismOpen}
-        recipe={recipe}
-        onClose={() => setIsSymbolismOpen(false)}
-      />
-
-      <AboutModal
-        isOpen={isAboutOpen}
-        onClose={() => setIsAboutOpen(false)}
-      />
-
-      <KeyboardShortcutsModal
-        isOpen={isShortcutsOpen}
-        onClose={() => setIsShortcutsOpen(false)}
-      />
+      {presetsOpen && (
+        <PresetLibrary
+          current={recipe}
+          sketchbook={sketchbook}
+          onClose={() => setPresetsOpen(false)}
+          onApply={(r) => {
+            applyRecipe(r);
+            setPresetsOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
-
-export default App;

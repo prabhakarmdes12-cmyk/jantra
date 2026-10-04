@@ -1,27 +1,25 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { JantraRecipe } from "../types/recipe";
+import { GrammarFamily, JantraRecipe } from "../types/recipe";
 import { defaultRecipe } from "../presets/defaultPresets";
 import { encodeRecipeToUrlHash, decodeRecipeFromUrlHash } from "../utils/url";
 import { computeRecipeChecksum } from "../utils/checksum";
+import { normalizeRecipe, defaultDetailFor } from "../engine/normalize";
 
-const MAX_HISTORY = 40;
+const MAX_HISTORY = 60;
 
 export function useRecipe() {
-  // Initialize from URL hash or default
   const [recipe, setRecipeState] = useState<JantraRecipe>(() => {
     if (typeof window !== "undefined") {
       const decoded = decodeRecipeFromUrlHash(window.location.hash);
-      if (decoded) return decoded;
+      if (decoded) return normalizeRecipe(decoded);
     }
-    return defaultRecipe;
+    return normalizeRecipe(defaultRecipe);
   });
 
-  // History stack for Undo / Redo
   const [history, setHistory] = useState<JantraRecipe[]>([recipe]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
   const isUndoRedoAction = useRef(false);
 
-  // Sync to URL hash when recipe changes
   useEffect(() => {
     const hash = encodeRecipeToUrlHash(recipe);
     if (hash && typeof window !== "undefined") {
@@ -29,31 +27,28 @@ export function useRecipe() {
     }
   }, [recipe]);
 
-  // Set new recipe with history recording
-  const setRecipe = useCallback((newRecipeOrFn: JantraRecipe | ((prev: JantraRecipe) => JantraRecipe)) => {
-    setRecipeState((prev) => {
-      const next = typeof newRecipeOrFn === "function" ? newRecipeOrFn(prev) : newRecipeOrFn;
-      
-      // Compute checksum
-      next.checksum = computeRecipeChecksum(next.parameters);
+  const setRecipe = useCallback(
+    (newRecipeOrFn: JantraRecipe | ((prev: JantraRecipe) => JantraRecipe)) => {
+      setRecipeState((prev) => {
+        const raw = typeof newRecipeOrFn === "function" ? newRecipeOrFn(prev) : newRecipeOrFn;
+        const next = normalizeRecipe(raw);
+        next.checksum = computeRecipeChecksum(next.parameters);
 
-      if (!isUndoRedoAction.current) {
-        setHistory((prevHist) => {
-          const truncated = prevHist.slice(0, historyIndex + 1);
-          const updated = [...truncated, next];
-          if (updated.length > MAX_HISTORY) {
-            return updated.slice(updated.length - MAX_HISTORY);
-          }
-          return updated;
-        });
-        setHistoryIndex((prevIdx) => Math.min(MAX_HISTORY - 1, prevIdx + 1));
-      }
+        if (!isUndoRedoAction.current) {
+          setHistory((prevHist) => {
+            const truncated = prevHist.slice(0, historyIndex + 1);
+            const updated = [...truncated, next];
+            return updated.length > MAX_HISTORY ? updated.slice(updated.length - MAX_HISTORY) : updated;
+          });
+          setHistoryIndex((prevIdx) => Math.min(MAX_HISTORY - 1, prevIdx + 1));
+        }
 
-      return next;
-    });
-  }, [historyIndex]);
+        return next;
+      });
+    },
+    [historyIndex]
+  );
 
-  // Undo action
   const undo = useCallback(() => {
     if (historyIndex > 0) {
       isUndoRedoAction.current = true;
@@ -66,7 +61,6 @@ export function useRecipe() {
     }
   }, [history, historyIndex]);
 
-  // Redo action
   const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       isUndoRedoAction.current = true;
@@ -82,163 +76,111 @@ export function useRecipe() {
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
-  // Parameter Updaters
-  const updateSeed = useCallback((newSeed: string | number) => {
-    setRecipe((prev) => ({
-      ...prev,
-      seed: newSeed,
-      provenance: {
-        ...prev.provenance,
-        createdAt: new Date().toISOString(),
-      },
-    }));
-  }, [setRecipe]);
+  /* ---------------- parameter updaters ---------------- */
+
+  const updateSeed = useCallback(
+    (newSeed: string | number) => {
+      setRecipe((prev) => ({
+        ...prev,
+        seed: newSeed,
+        provenance: {
+          ...prev.provenance,
+          lineageId: String(newSeed),
+          generation: String(newSeed).split("-").length - 1,
+          parentSeed: undefined,
+          createdAt: new Date().toISOString(),
+        },
+      }));
+    },
+    [setRecipe]
+  );
 
   const randomizeSeed = useCallback(() => {
-    const randomSeedVal = Math.floor(Math.random() * 90000 + 10000).toString();
-    updateSeed(randomSeedVal);
+    updateSeed(Math.floor(Math.random() * 90000 + 10000).toString());
   }, [updateSeed]);
 
-  const updateSymmetry = useCallback((symmetry: Partial<JantraRecipe["parameters"]["symmetry"]>) => {
-    setRecipe((prev) => ({
-      ...prev,
-      parameters: {
-        ...prev.parameters,
-        symmetry: {
-          ...prev.parameters.symmetry,
-          ...symmetry,
+  const setFamily = useCallback(
+    (family: GrammarFamily) => {
+      setRecipe((prev) => ({
+        ...prev,
+        grammar: { family, id: `jantra-${family}`, version: prev.grammar.version },
+        parameters: {
+          ...prev.parameters,
+          detail: { ...defaultDetailFor(family), ...prev.parameters.detail },
         },
-      },
-    }));
-  }, [setRecipe]);
+      }));
+    },
+    [setRecipe]
+  );
 
-  const updateRings = useCallback((rings: Partial<JantraRecipe["parameters"]["rings"]>) => {
-    setRecipe((prev) => ({
-      ...prev,
-      parameters: {
-        ...prev.parameters,
-        rings: {
-          ...prev.parameters.rings,
-          ...rings,
+  const patch = useCallback(
+    <K extends keyof JantraRecipe["parameters"]>(key: K, value: Partial<JantraRecipe["parameters"][K]>) => {
+      setRecipe((prev) => ({
+        ...prev,
+        parameters: {
+          ...prev.parameters,
+          [key]: typeof value === "object" && value !== null && !Array.isArray(value)
+            ? { ...(prev.parameters[key] as object), ...(value as object) }
+            : value,
         },
-      },
-    }));
-  }, [setRecipe]);
+      }));
+    },
+    [setRecipe]
+  );
 
-  const updateRecursion = useCallback((recursion: Partial<JantraRecipe["parameters"]["recursion"]>) => {
-    setRecipe((prev) => ({
-      ...prev,
-      parameters: {
-        ...prev.parameters,
-        recursion: {
-          ...prev.parameters.recursion,
-          ...recursion,
-        },
-      },
-    }));
-  }, [setRecipe]);
+  const updateSymmetry = useCallback(
+    (v: Partial<JantraRecipe["parameters"]["symmetry"]>) => patch("symmetry", v),
+    [patch]
+  );
+  const updateRings = useCallback((v: Partial<JantraRecipe["parameters"]["rings"]>) => patch("rings", v), [patch]);
+  const updateRecursion = useCallback(
+    (v: Partial<JantraRecipe["parameters"]["recursion"]>) => patch("recursion", v),
+    [patch]
+  );
+  const updateLine = useCallback((v: Partial<JantraRecipe["parameters"]["line"]>) => patch("line", v), [patch]);
+  const updateMotifs = useCallback((v: Partial<JantraRecipe["parameters"]["motifs"]>) => patch("motifs", v), [patch]);
+  const updatePalette = useCallback(
+    (v: Partial<JantraRecipe["parameters"]["palette"]>) => patch("palette", v),
+    [patch]
+  );
+  const updateDetail = useCallback(
+    (v: Partial<NonNullable<JantraRecipe["parameters"]["detail"]>>) => patch("detail", v),
+    [patch]
+  );
 
-  const updateDensity = useCallback((density: number) => {
-    setRecipe((prev) => ({
-      ...prev,
-      parameters: {
-        ...prev.parameters,
-        density,
-      },
-    }));
-  }, [setRecipe]);
+  const updateDensity = useCallback(
+    (density: number) => setRecipe((p) => ({ ...p, parameters: { ...p.parameters, density } })),
+    [setRecipe]
+  );
+  const updatePrana = useCallback(
+    (prana: number) => setRecipe((p) => ({ ...p, parameters: { ...p.parameters, prana } })),
+    [setRecipe]
+  );
 
-  const updatePrana = useCallback((prana: number) => {
-    setRecipe((prev) => ({
-      ...prev,
-      parameters: {
-        ...prev.parameters,
-        prana,
-      },
-    }));
-  }, [setRecipe]);
+  const updateCanvas = useCallback(
+    (canvas: Partial<JantraRecipe["canvas"]>) => setRecipe((p) => ({ ...p, canvas: { ...p.canvas, ...canvas } })),
+    [setRecipe]
+  );
 
-  const updateLine = useCallback((line: Partial<JantraRecipe["parameters"]["line"]>) => {
-    setRecipe((prev) => ({
-      ...prev,
-      parameters: {
-        ...prev.parameters,
-        line: {
-          ...prev.parameters.line,
-          ...line,
-        },
-      },
-    }));
-  }, [setRecipe]);
+  const loadRecipe = useCallback((newRecipe: JantraRecipe) => setRecipe(newRecipe), [setRecipe]);
+  const resetToDefault = useCallback(() => setRecipe(defaultRecipe), [setRecipe]);
 
-  const updateMotifs = useCallback((motifs: Partial<JantraRecipe["parameters"]["motifs"]>) => {
-    setRecipe((prev) => ({
-      ...prev,
-      parameters: {
-        ...prev.parameters,
-        motifs: {
-          ...prev.parameters.motifs,
-          ...motifs,
-        },
-      },
-    }));
-  }, [setRecipe]);
+  /* ---------------- keyboard ---------------- */
 
-  const updatePalette = useCallback((palette: Partial<JantraRecipe["parameters"]["palette"]>) => {
-    setRecipe((prev) => ({
-      ...prev,
-      parameters: {
-        ...prev.parameters,
-        palette: {
-          ...prev.parameters.palette,
-          ...palette,
-        },
-      },
-    }));
-  }, [setRecipe]);
-
-  const updateCanvas = useCallback((canvas: Partial<JantraRecipe["canvas"]>) => {
-    setRecipe((prev) => ({
-      ...prev,
-      canvas: {
-        ...prev.canvas,
-        ...canvas,
-      },
-    }));
-  }, [setRecipe]);
-
-  const loadRecipe = useCallback((newRecipe: JantraRecipe) => {
-    setRecipe(newRecipe);
-  }, [setRecipe]);
-
-  const resetToDefault = useCallback(() => {
-    setRecipe(defaultRecipe);
-  }, [setRecipe]);
-
-  // Keyboard shortcut listener (Cmd+Z / Ctrl+Z / Cmd+Shift+Z / Ctrl+Y)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return; // Don't intercept when typing in inputs
-      }
-
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
       const modKey = isMac ? e.metaKey : e.ctrlKey;
-
       if (modKey && e.key.toLowerCase() === "z") {
-        if (e.shiftKey) {
-          e.preventDefault();
-          redo();
-        } else {
-          e.preventDefault();
-          undo();
-        }
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
       } else if (!isMac && modKey && e.key.toLowerCase() === "y") {
         e.preventDefault();
         redo();
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
@@ -254,6 +196,7 @@ export function useRecipe() {
     historyLength: history.length,
     updateSeed,
     randomizeSeed,
+    setFamily,
     updateSymmetry,
     updateRings,
     updateRecursion,
@@ -262,6 +205,7 @@ export function useRecipe() {
     updateLine,
     updateMotifs,
     updatePalette,
+    updateDetail,
     updateCanvas,
     loadRecipe,
     resetToDefault,
