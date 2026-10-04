@@ -6,6 +6,8 @@
 [![SVG Engine](https://img.shields.io/badge/Engine-Procedural%20SVG-FF6B6B?style=flat-square)](#)
 [![Zero-AI Dependency](https://img.shields.io/badge/Core-100%25%20Offline%20Deterministic-brightgreen?style=flat-square)](#)
 
+![The eight visual grammar families](./docs/gallery.png)
+
 > **Can visual grammar be modeled as a computational system rather than copied as finished imagery?**
 
 **JANTRA** is a browser-based, open-source computational design tool that lets creators generate beautiful, reproducible vector compositions by manipulating visual grammar — geometry, symmetry, repetition, recursion, rhythm, and controlled imperfection (*Prana*) — directly through an inspector or via natural-language intent.
