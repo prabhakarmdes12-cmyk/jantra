@@ -31,6 +31,24 @@ export function buildBindu(spec: BinduSpec, ctx: BuildContext): SVGElementData[]
   const aura = spec.style === "radiant" || spec.style === "triple_aura";
   const rippleCount = spec.style === "triple_aura" ? 3 : 2;
 
+  // --- 0. Luminous bloom: stacked translucent discs fake a soft glow
+  // without any raster filter, so the export stays pure editable vector.
+  if (aura || spec.bold) {
+    const bloomSteps = spec.bold ? 9 : 7;
+    for (let i = bloomSteps; i >= 1; i--) {
+      const t = i / bloomSteps;
+      out.push({
+        id: `bindu-bloom-${i}`,
+        cx: 0,
+        cy: 0,
+        r: r * (1.1 + t * (spec.bold ? 7.5 : 5.4)),
+        fill: ink.accent,
+        fillOpacity: 0.055 * Math.pow(1 - t, 1.9) + 0.006,
+        stroke: "none",
+      });
+    }
+  }
+
   // --- 1. Soft aura: nested hairline rings at falling opacity -----------
   if (aura || spec.bold) {
     const auraRings = spec.bold ? 5 : 4;

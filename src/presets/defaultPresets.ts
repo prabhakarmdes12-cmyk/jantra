@@ -1,11 +1,8 @@
-import { DetailFlags, GrammarFamily, JantraRecipe, PresetRecipe } from "../types/recipe";
-import { defaultDetailFor, ENGINE_VERSION } from "../engine/normalize";
+import { GrammarFamily, JantraRecipe, PresetRecipe } from "../types/recipe";
+import { DEFAULT_INK } from "./inkPalettes";
+import { defaultDetailLevelFor, ENGINE_VERSION } from "../engine/normalize";
 
 const CREATED = "2026-10-04T00:00:00.000Z";
-
-function detail(family: GrammarFamily, patch: Partial<DetailFlags> = {}): DetailFlags {
-  return { ...defaultDetailFor(family), ...patch };
-}
 
 export function makeRecipe(
   family: GrammarFamily,
@@ -32,19 +29,20 @@ export function makeRecipe(
       recursion: { depth: 3, scale: 0.65 },
       density: 0.38,
       prana: 22,
-      line: { weight: 2.17, cap: "round", color: "#f4f4f5", dashPattern: "none" },
+      line: { weight: 2.17, cap: "round", color: DEFAULT_INK.stroke, dashPattern: "none" },
       motifs: {
         primary: "lotus_lobe",
         secondary: "dot",
         bindu: { radius: 13, style: "radiant" },
         bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
       },
-      detail: detail(family),
+      detailLevel: defaultDetailLevelFor(family),
+      evolution: { strength: 50, mutation: "structured" },
       palette: {
-        stroke: "#f4f4f5",
-        secondaryStroke: "#71717a",
-        accent: "#f59e0b",
-        construction: "#06b6d4",
+        stroke: DEFAULT_INK.stroke,
+        secondaryStroke: DEFAULT_INK.secondaryStroke,
+        accent: DEFAULT_INK.accent,
+        construction: DEFAULT_INK.construction,
         fill: "none",
       },
       ...params,
@@ -76,7 +74,8 @@ export const defaultRecipe: JantraRecipe = makeRecipe(
       bindu: { radius: 15, style: "radiant" },
       bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
     },
-    detail: detail("lotus", { ribCount: 5 }),
+    detailLevel: defaultDetailLevelFor("lotus"),
+    detail: { ribCount: 5 },
   },
   {},
   "Eight-fold sacred lotus with filigree ribbing, stippled orbit bands and a stepped bhupura"
@@ -115,12 +114,12 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 11, style: "triple_aura" },
           bhupura: { enabled: true, gates: 4, steps: 3, finials: true },
         },
-        detail: detail("yantra"),
+        detailLevel: defaultDetailLevelFor("yantra"),
         palette: {
-          stroke: "#fef3c7",
-          secondaryStroke: "#a16207",
+          stroke: "#f2cd87",
+          secondaryStroke: "#8a6228",
           accent: "#f59e0b",
-          construction: "#06b6d4",
+          construction: "#7a5a24",
           fill: "none",
         },
       },
@@ -151,12 +150,12 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 12, style: "solid" },
           bhupura: { enabled: true, gates: 4, steps: 3, finials: true },
         },
-        detail: detail("temple"),
+        detailLevel: defaultDetailLevelFor("temple"),
         palette: {
-          stroke: "#fde68a",
+          stroke: "#e8b96a",
           secondaryStroke: "#92400e",
           accent: "#f59e0b",
-          construction: "#06b6d4",
+          construction: "#7a5a24",
           fill: "none",
         },
       },
@@ -187,7 +186,7 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 13, style: "triple_aura" },
           bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
         },
-        detail: detail("mandala"),
+        detailLevel: defaultDetailLevelFor("mandala"),
       },
       {},
       "Dense twelve-fold chakra mandala"
@@ -216,12 +215,12 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 16, style: "radiant" },
           bhupura: { enabled: false, gates: 4, steps: 1, finials: false },
         },
-        detail: detail("organic"),
+        detailLevel: defaultDetailLevelFor("organic"),
         palette: {
-          stroke: "#fff7ed",
+          stroke: "#f6d9b0",
           secondaryStroke: "#9a6a3a",
           accent: "#fb923c",
-          construction: "#06b6d4",
+          construction: "#7a5a24",
           fill: "none",
         },
       },
@@ -252,7 +251,7 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 11, style: "radiant" },
           bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
         },
-        detail: detail("ornamental"),
+        detailLevel: defaultDetailLevelFor("ornamental"),
       },
       {},
       "Maximum-density guilloché and jali weave"
@@ -281,7 +280,7 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 24, style: "radiant" },
           bhupura: { enabled: false, gates: 4, steps: 1, finials: false },
         },
-        detail: detail("minimal"),
+        detailLevel: defaultDetailLevelFor("minimal"),
       },
       {},
       "Poster-grade minimal composition"
@@ -310,12 +309,12 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 13, style: "triple_aura" },
           bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
         },
-        detail: detail("experimental"),
+        detailLevel: defaultDetailLevelFor("experimental"),
         palette: {
-          stroke: "#e0f2fe",
+          stroke: "#a5f3fc",
           secondaryStroke: "#0e7490",
-          accent: "#f59e0b",
-          construction: "#06b6d4",
+          accent: "#22d3ee",
+          construction: "#155e75",
           fill: "none",
         },
       },
@@ -346,12 +345,13 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 14, style: "triple_aura" },
           bhupura: { enabled: true, gates: 4, steps: 3, finials: true },
         },
-        detail: detail("lotus", { ribCount: 7 }),
+        detailLevel: defaultDetailLevelFor("lotus"),
+        detail: { ribCount: 7 },
         palette: {
-          stroke: "#fff1f2",
+          stroke: "#fecdd3",
           secondaryStroke: "#9f1239",
           accent: "#f43f5e",
-          construction: "#06b6d4",
+          construction: "#7f1d2e",
           fill: "none",
         },
       },
@@ -382,10 +382,11 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 12, style: "radiant" },
           bhupura: { enabled: true, gates: 4, steps: 2, finials: false },
         },
-        detail: detail("yantra", { ribCount: 6 }),
+        detailLevel: defaultDetailLevelFor("yantra"),
+        detail: { ribCount: 6 },
         palette: {
-          stroke: "#f8fafc",
-          secondaryStroke: "#64748b",
+          stroke: "#f4f4f5",
+          secondaryStroke: "#71717a",
           accent: "#f59e0b",
           construction: "#06b6d4",
           fill: "none",
@@ -418,12 +419,13 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 11, style: "hollow" },
           bhupura: { enabled: true, gates: 4, steps: 3, finials: true },
         },
-        detail: detail("temple", { ribCount: 3 }),
+        detailLevel: defaultDetailLevelFor("temple"),
+        detail: { ribCount: 3 },
         palette: {
-          stroke: "#e2e8f0",
-          secondaryStroke: "#475569",
+          stroke: "#e8b96a",
+          secondaryStroke: "#8a6228",
           accent: "#f59e0b",
-          construction: "#06b6d4",
+          construction: "#7a5a24",
           fill: "none",
         },
       },
@@ -454,7 +456,8 @@ export const PRESETS: PresetRecipe[] = [
           bindu: { radius: 14, style: "hollow" },
           bhupura: { enabled: true, gates: 4, steps: 2, finials: true },
         },
-        detail: detail("mandala", { construction: false, ribCount: 4 }),
+        detailLevel: defaultDetailLevelFor("mandala"),
+        detail: { construction: false, ribCount: 4 },
         palette: {
           stroke: "#18181b",
           secondaryStroke: "#52525b",

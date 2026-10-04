@@ -12,9 +12,9 @@
  * recipient gets byte-identical art.
  */
 
-import { GrammarFamily, JantraRecipe } from "../types/recipe";
+import { GrammarFamily, JantraRecipe, MutationMode } from "../types/recipe";
 import { createPRNG, PRNG } from "./prng";
-import { normalizeRecipe, defaultDetailFor } from "./normalize";
+import { normalizeRecipe, defaultDetailLevelFor } from "./normalize";
 import { clamp } from "./geom";
 
 export interface MutationOperator {
@@ -56,7 +56,101 @@ function setFamily(r: JantraRecipe, family: GrammarFamily): JantraRecipe {
     grammar: { family, id: `jantra-${family}`, version: r.grammar.version },
     parameters: {
       ...r.parameters,
-      detail: { ...defaultDetailFor(family), ...r.parameters.detail },
+      // Re-seat the detail dial on the incoming family's default position,
+      // keeping the parent's deviation from its own default.
+      detailLevel: clamp(
+        (r.parameters.detailLevel ?? defaultDetailLevelFor(r.grammar.family)) -
+          defaultDetailLevelFor(r.grammar.family) +
+          defaultDetailLevelFor(family),
+        0,
+        100
+      ),
+      detail: r.parameters.detail,
+    },
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Evolution strength — how far a child actually travels                */
+/* ------------------------------------------------------------------ */
+
+const lerpNum = (a: number, b: number, t: number): number => a + (b - a) * t;
+
+/** Discrete swaps only take effect once the child has travelled far enough. */
+const DISCRETE_GATE = 0.25;
+const FAMILY_GATE = 0.3;
+
+/**
+ * Every operator writes its *full stride*. Evolution Strength then decides how
+ * much of that stride the child actually takes, by interpolating back toward
+ * the parent. The direction of travel is untouched, so the tree stays exactly
+ * as reproducible at strength 20 as it is at 100.
+ */
+function applyStrength(
+  parent: JantraRecipe,
+  child: JantraRecipe,
+  strength: number,
+  mode: MutationMode,
+  prng: PRNG
+): JantraRecipe {
+  const base = clamp(strength, 0, 100) / 100;
+  // Wild runs hot and overshoots; balanced adds a little seeded play.
+  const t = mode === "wild" ? clamp(base * 1.25, 0, 1.25) : base;
+  const jitter = mode === "structured" ? 0 : mode === "balanced" ? 0.12 : 0.3;
+  const play = (span: number) => (jitter === 0 ? 0 : prng.range(-1, 1) * jitter * span);
+
+  const pp = parent.parameters;
+  const cp = child.parameters;
+
+  const num = (a: number, b: number, span = Math.abs(b - a)) => lerpNum(a, b, t) + play(span);
+  const int = (a: number, b: number, lo: number, hi: number) => clamp(Math.round(num(a, b)), lo, hi);
+
+  const takeDiscrete = t >= DISCRETE_GATE;
+  const takeFamily = t >= FAMILY_GATE;
+
+  return {
+    ...child,
+    grammar: takeFamily ? child.grammar : parent.grammar,
+    canvas: child.canvas,
+    parameters: {
+      ...cp,
+      symmetry: {
+        mode: takeDiscrete ? cp.symmetry.mode : pp.symmetry.mode,
+        segments: int(pp.symmetry.segments, cp.symmetry.segments, 3, 36),
+        outerMultiplier: int(pp.symmetry.outerMultiplier ?? 1, cp.symmetry.outerMultiplier ?? 1, 1, 3),
+        asymmetry: clamp(num(pp.symmetry.asymmetry ?? 0, cp.symmetry.asymmetry ?? 0), 0, 30),
+      },
+      rings: {
+        ...cp.rings,
+        count: int(pp.rings.count, cp.rings.count, 1, 14),
+        spacing: takeDiscrete ? cp.rings.spacing : pp.rings.spacing,
+      },
+      recursion: {
+        depth: int(pp.recursion.depth, cp.recursion.depth, 1, 6),
+        scale: clamp(num(pp.recursion.scale, cp.recursion.scale), 0.2, 0.95),
+      },
+      density: clamp(num(pp.density, cp.density, 0.3), 0.05, 1),
+      prana: clamp(Math.round(num(pp.prana, cp.prana, 18)), 0, 100),
+      detailLevel: clamp(Math.round(num(pp.detailLevel ?? 60, cp.detailLevel ?? 60, 16)), 0, 100),
+      line: {
+        ...cp.line,
+        weight: clamp(num(pp.line.weight, cp.line.weight, 0.6), 0.3, 8),
+        cap: takeDiscrete ? cp.line.cap : pp.line.cap,
+      },
+      motifs: {
+        ...cp.motifs,
+        primary: takeDiscrete ? cp.motifs.primary : pp.motifs.primary,
+        bindu: {
+          radius: clamp(Math.round(num(pp.motifs.bindu.radius, cp.motifs.bindu.radius, 4)), 2, 48),
+          style: takeDiscrete ? cp.motifs.bindu.style : pp.motifs.bindu.style,
+        },
+        bhupura: {
+          ...cp.motifs.bhupura,
+          enabled: takeDiscrete ? cp.motifs.bhupura.enabled : pp.motifs.bhupura.enabled,
+          steps: int(pp.motifs.bhupura.steps, cp.motifs.bhupura.steps, 1, 4),
+          gates: int(pp.motifs.bhupura.gates, cp.motifs.bhupura.gates, 0, 4),
+        },
+      },
     },
   };
 }
@@ -82,12 +176,7 @@ export const GEN1_OPERATORS: MutationOperator[] = [
         rings: { ...p.rings, count: clamp(p.rings.count + 3, 1, 12) },
         symmetry: { ...p.symmetry, segments: clamp(p.symmetry.segments + 4, 2, 32) },
         line: { ...p.line, weight: clamp(p.line.weight * 0.84, 0.4, 8) },
-        detail: {
-          ...(p.detail ?? defaultDetailFor("lotus")),
-          ribCount: clamp((p.detail?.ribCount ?? 5) + 2, 3, 9),
-          stipple: true,
-          nodes: true,
-        },
+        detailLevel: clamp((p.detailLevel ?? defaultDetailLevelFor("lotus")) + 22, 0, 100),
       });
     },
   },
@@ -166,12 +255,7 @@ export const GEN1_OPERATORS: MutationOperator[] = [
         rings: { ...p.rings, count: clamp(p.rings.count + 3, 6, 10) },
         symmetry: { ...p.symmetry, segments: clamp(p.symmetry.segments + 4, 8, 24), outerMultiplier: 2 },
         line: { ...p.line, weight: clamp(p.line.weight * 0.72, 0.4, 4) },
-        detail: {
-          ...(p.detail ?? defaultDetailFor("ornamental")),
-          stipple: true,
-          lattice: true,
-          ribCount: 7,
-        },
+        detailLevel: clamp((p.detailLevel ?? defaultDetailLevelFor("ornamental")) + 18, 55, 100),
       });
     },
   },
@@ -316,7 +400,14 @@ export function spawnDescendants(parent: JantraRecipe): EvolutionNode[] {
     const lineageId = `${parentLineage}-${op.suffix}`;
     // Seeded by the lineage address itself → reproducible forever.
     const prng = createPRNG(`jantra::evolve::${lineageId}::${op.key}`);
-    const mutated = op.apply(base, prng);
+    const stride = op.apply(base, prng);
+    const mutated = applyStrength(
+      base,
+      stride,
+      base.parameters.evolution?.strength ?? 50,
+      base.parameters.evolution?.mutation ?? "structured",
+      prng
+    );
 
     const child: JantraRecipe = normalizeRecipe({
       ...mutated,

@@ -53,6 +53,35 @@ input[type="range"] {
   outline-offset: 1px;
 }
 
+/* NumberSlider: the track is drawn by the component, so the native input
+   is transparent and only contributes the thumb. */
+.jantra-range::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 20px;
+}
+.jantra-range::-moz-range-track {
+  background: transparent;
+  height: 20px;
+}
+.jantra-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: 2px solid #0b0b0e;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.45), 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.jantra-range::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: 2px solid #0b0b0e;
+}
+
 /* Range thumbs: amber dot on a hairline track */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;

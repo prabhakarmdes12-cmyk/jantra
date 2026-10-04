@@ -1,3 +1,4 @@
+import { effectiveDetail } from "./normalize";
 import { DetailFlags, JantraRecipe, LineCap } from "../types/recipe";
 import { SVGElementData, SVGGElementData } from "../types/geometry";
 import { PRNG, createPRNG } from "./prng";
@@ -87,7 +88,9 @@ export function createContext(recipe: JantraRecipe): BuildContext {
   const outerMul = clamp(Math.round(p.symmetry.outerMultiplier ?? 1), 1, 3);
   const outerSegments = clamp(segments * outerMul, 2, 96);
 
-  const detail: DetailFlags = { ...DEFAULT_DETAIL, ...(p.detail || {}) };
+  // The DETAIL LEVEL dial derives the layer switches; sparse per-layer
+  // overrides from the Layers panel sit on top of it.
+  const detail: DetailFlags = { ...effectiveDetail(recipe) };
   detail.ribCount = clamp(Math.round(detail.ribCount), 0, 9);
 
   const ink: Ink = {

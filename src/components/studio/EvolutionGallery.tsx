@@ -39,11 +39,11 @@ export const EvolutionGallery: React.FC<EvolutionGalleryProps> = ({
 
   return (
     <section
-      className={`shrink-0 border-t border-zinc-800/80 bg-[#0b0b0e] transition-[height] duration-200 ${
-        expanded ? "h-[188px]" : "h-[42px]"
+      className={`flex-1 min-w-0 bg-[#0a0a0c] transition-[height] duration-200 ${
+        expanded ? "h-[196px]" : "h-[44px]"
       }`}
     >
-      <header className="h-[42px] px-4 flex items-center gap-3">
+      <header className="h-[44px] px-4 flex items-center gap-3">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -52,7 +52,7 @@ export const EvolutionGallery: React.FC<EvolutionGalleryProps> = ({
         >
           <ChevronRight className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
           <GitBranch className="w-3.5 h-3.5 text-amber-500" />
-          <span className="text-[10px] font-semibold tracking-[0.18em] uppercase">Evolution</span>
+          <span className="text-[12.5px] font-semibold">Evolution Gallery</span>
         </button>
 
         <nav className="flex items-center gap-1 min-w-0 overflow-x-auto no-scrollbar">
@@ -114,7 +114,7 @@ export const EvolutionGallery: React.FC<EvolutionGalleryProps> = ({
 
       {expanded && (
         <div
-          className={`h-[146px] px-4 pb-4 flex items-stretch gap-2.5 overflow-x-auto no-scrollbar transition-opacity ${
+          className={`h-[152px] px-4 pb-4 flex items-stretch gap-2.5 overflow-x-auto no-scrollbar transition-opacity ${
             stale ? "opacity-50" : "opacity-100"
           }`}
         >

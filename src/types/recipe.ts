@@ -62,6 +62,24 @@ export interface DetailFlags {
   lattice: boolean;
 }
 
+/** How freely the Evolve operators are allowed to wander from the parent. */
+export type MutationMode = "structured" | "balanced" | "wild";
+
+export interface EvolutionSettings {
+  /**
+   * 0 - 100. Scales how far each descendant travels from its parent.
+   * 0 keeps siblings nearly identical; 100 lets an operator take its full
+   * stride. The *direction* of travel stays fully deterministic either way.
+   */
+  strength: number;
+  /**
+   * structured · canonical operators only, the textbook six
+   * balanced   · canonical direction plus seeded sub-variation
+   * wild       · larger jumps, operators may also swap the grammar family
+   */
+  mutation: MutationMode;
+}
+
 export interface GrammarDescriptor {
   family: GrammarFamily;
   id: string;
@@ -128,7 +146,20 @@ export interface JantraRecipe {
         finials?: boolean;
       };
     };
-    detail?: DetailFlags;
+    /**
+     * DETAIL LEVEL — 0 to 100. A single dial that progressively switches on
+     * the ornamental strata, cheapest-reading first:
+     *   >12 construction geometry · >28 stipple orbits · >42 petal ribbing
+     *   >58 celestial nodes · >76 jali lattice
+     * Vein count ramps 3 -> 7 across the upper half of the range.
+     */
+    detailLevel?: number;
+    /**
+     * Sparse per-layer overrides on top of what `detailLevel` derives.
+     * Only the keys present here win; everything else follows the dial.
+     */
+    detail?: Partial<DetailFlags>;
+    evolution?: EvolutionSettings;
     palette: {
       theme?: ColorTheme;
       stroke: string;
@@ -192,7 +223,7 @@ export const GRAMMAR_FAMILIES: GrammarFamilyMeta[] = [
     id: "lotus",
     name: "Lotus",
     sanskrit: "पद्म",
-    tagline: "Sacred geometry · balance",
+    tagline: "Sacred geometry, balance, growth",
     description:
       "Multi-tiered blooming petals with delicate internal vein hatching, stippled orbit bands and a stepped bhupura.",
     glyph:
@@ -202,7 +233,7 @@ export const GRAMMAR_FAMILIES: GrammarFamilyMeta[] = [
     id: "temple",
     name: "Temple",
     sanskrit: "मन्दिर",
-    tagline: "Architectural enclosures",
+    tagline: "Architecture, enclosures, gates",
     description:
       "Nested sanctum plans, mandapa pillar grids, layered stepped gateways and corner alignment brackets.",
     glyph:
@@ -212,7 +243,7 @@ export const GRAMMAR_FAMILIES: GrammarFamilyMeta[] = [
     id: "mandala",
     name: "Mandala",
     sanskrit: "मण्डल",
-    tagline: "Radial harmony",
+    tagline: "Radial harmony, infinite variation",
     description:
       "Dense concentric rings of alternating geometric serrations, lotus corollas and celestial intersection nodes.",
     glyph:
@@ -222,7 +253,7 @@ export const GRAMMAR_FAMILIES: GrammarFamilyMeta[] = [
     id: "yantra",
     name: "Yantra",
     sanskrit: "यन्त्र",
-    tagline: "Geometric precision",
+    tagline: "Geometric precision, mathematical",
     description:
       "Nine interlocking Shiva–Shakti triangles of the Sri Yantra archetype, stellated polygons and sharp radial rays.",
     glyph:
@@ -232,7 +263,7 @@ export const GRAMMAR_FAMILIES: GrammarFamilyMeta[] = [
     id: "organic",
     name: "Organic",
     sanskrit: "प्राण",
-    tagline: "Flowing tendrils",
+    tagline: "Flowing forms, natural systems",
     description:
       "Rhythmic curves, petal branching and high-prana living variation that breathes across every symmetry axis.",
     glyph:
@@ -242,7 +273,7 @@ export const GRAMMAR_FAMILIES: GrammarFamilyMeta[] = [
     id: "ornamental",
     name: "Ornamental",
     sanskrit: "अलंकार",
-    tagline: "Intricate high frequency",
+    tagline: "Intricate patterns, high density",
     description:
       "Guilloché-like woven concentric bands, micro-infilling and jali lattice textures at maximum line density.",
     glyph:
@@ -252,7 +283,7 @@ export const GRAMMAR_FAMILIES: GrammarFamilyMeta[] = [
     id: "minimal",
     name: "Minimal",
     sanskrit: "शून्य",
-    tagline: "Poster clarity",
+    tagline: "Essential forms, visual clarity",
     description:
       "Extremely sparse, bold focal bindu, stark high-contrast lines and generous harmonic negative space.",
     glyph: "M0,-40 A40,40 0 1,1 0,40 A40,40 0 1,1 0,-40 M-40,0 L40,0 M0,-9 A9,9 0 1,1 0,9 A9,9 0 1,1 0,-9",
@@ -261,7 +292,7 @@ export const GRAMMAR_FAMILIES: GrammarFamilyMeta[] = [
     id: "experimental",
     name: "Experimental",
     sanskrit: "प्रयोग",
-    tagline: "Hybrid symmetries",
+    tagline: "Unusual compositions, new forms",
     description:
       "An 8-fold core expanding into 16/24-fold outer registers, controlled asymmetric shifts and unexpected forms.",
     glyph:

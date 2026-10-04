@@ -8,6 +8,8 @@ import { GRAMMAR_FAMILY_IDS, GrammarFamily } from "./types/recipe";
 import { normalizeRecipe } from "./engine/normalize";
 import { spawnDescendants, resolveLineage, ancestryOf, generationOf } from "./engine/genealogy";
 import { createPranaField, PRANA_STAGES } from "./engine/prana";
+import { deriveDetail, effectiveDetail, defaultDetailLevelFor } from "./engine/normalize";
+import { INK_PALETTES, matchInkPalette } from "./presets/inkPalettes";
 
 console.log("=========================================");
 console.log("   JANTRA EXPANDED VERIFICATION SUITE   ");
@@ -215,6 +217,120 @@ assert(exportSvg.includes('data-jantra-seed="108"'), "Export SVG embeds its repr
 assert(
   (exportSvg.match(/<path/g) ?? []).length + (exportSvg.match(/<circle/g) ?? []).length > 0,
   "Export SVG is made of editable vector primitives"
+);
+
+
+/* ================================================================== */
+/* TEST 13: Detail Level is a single progressive dial                 */
+/* ================================================================== */
+const detailOff = deriveDetail(0, "lotus");
+assert(
+  !detailOff.construction && !detailOff.stipple && !detailOff.ribbing && !detailOff.nodes && !detailOff.lattice,
+  "Detail Level 0 strips every ornamental stratum"
+);
+const detailMax = deriveDetail(100, "lotus");
+assert(
+  detailMax.construction && detailMax.stipple && detailMax.ribbing && detailMax.nodes && detailMax.lattice,
+  "Detail Level 100 switches on every ornamental stratum"
+);
+assert(deriveDetail(0, "lotus").ribCount === 3 && deriveDetail(100, "lotus").ribCount === 7,
+  "Vein count ramps 3 -> 7 across the Detail Level range");
+
+let monotonic = true;
+let prevOn = -1;
+for (let v = 0; v <= 100; v += 5) {
+  const d = deriveDetail(v, "lotus");
+  const on = [d.construction, d.stipple, d.ribbing, d.nodes, d.lattice].filter(Boolean).length;
+  if (on < prevOn) monotonic = false;
+  prevOn = on;
+}
+assert(monotonic, "Raising Detail Level never removes a layer");
+
+const detailScenes = [0, 25, 50, 75, 100].map((detailLevel) => {
+  const r = normalizeRecipe({
+    ...defaultRecipe,
+    parameters: { ...defaultRecipe.parameters, detailLevel, detail: {} },
+  });
+  return generateScene(r).totalPaths;
+});
+assert(
+  detailScenes.every((n, i) => i === 0 || n >= detailScenes[i - 1]),
+  "Path count rises monotonically with Detail Level"
+);
+
+const overridden = normalizeRecipe({
+  ...defaultRecipe,
+  parameters: { ...defaultRecipe.parameters, detailLevel: 100, detail: { lattice: false } },
+});
+assert(
+  effectiveDetail(overridden).lattice === false && effectiveDetail(overridden).nodes === true,
+  "A per-layer override beats the dial without disturbing its neighbours"
+);
+assert(
+  defaultDetailLevelFor("minimal") < defaultDetailLevelFor("ornamental"),
+  "Minimal ships a quieter default dial than ornamental"
+);
+
+/* ================================================================== */
+/* TEST 14: Evolution Strength and Mutation mode                      */
+/* ================================================================== */
+function childAt(strength: number, mutation: "structured" | "balanced" | "wild") {
+  const parent = normalizeRecipe({
+    ...defaultRecipe,
+    seed: "108",
+    parameters: { ...defaultRecipe.parameters, evolution: { strength, mutation } },
+  });
+  return { parent, kids: spawnDescendants(parent) };
+}
+
+const weak = childAt(0, "structured");
+const strong = childAt(100, "structured");
+const weakA = weak.kids[0].recipe.parameters;
+const strongA = strong.kids[0].recipe.parameters;
+assert(
+  Math.abs(weakA.symmetry.segments - weak.parent.parameters.symmetry.segments) <
+    Math.abs(strongA.symmetry.segments - weak.parent.parameters.symmetry.segments),
+  "Evolution Strength 0 keeps a child closer to its parent than strength 100"
+);
+assert(
+  weak.kids[0].recipe.grammar.family === weak.parent.grammar.family,
+  "At strength 0 a descendant does not change grammar family"
+);
+assert(
+  strong.kids[1].recipe.grammar.family === "temple",
+  "At strength 100 the temple operator still swaps the family"
+);
+assert(
+  JSON.stringify(spawnDescendants(weak.parent).map((k) => k.recipe.parameters)) ===
+    JSON.stringify(weak.kids.map((k) => k.recipe.parameters)),
+  "Evolution stays deterministic at every strength"
+);
+assert(
+  JSON.stringify(childAt(60, "structured").kids.map((k) => k.recipe.parameters)) !==
+    JSON.stringify(childAt(60, "wild").kids.map((k) => k.recipe.parameters)),
+  "Mutation mode changes the descendants it produces"
+);
+assert(
+  childAt(60, "balanced").kids.length === 6 && childAt(60, "wild").kids.length === 6,
+  "Every mutation mode still yields the canonical six gen-1 descendants"
+);
+
+/* ================================================================== */
+/* TEST 15: Ink palettes                                              */
+/* ================================================================== */
+assert(INK_PALETTES.length === 6, "Six ink palettes are offered as swatches");
+assert(INK_PALETTES[0].id === "gold", "Temple Gold is the default plate colourway");
+assert(
+  INK_PALETTES.some((p) => p.construction.toLowerCase() === "#06b6d4"),
+  "The electric-cyan technical construction ink is still available"
+);
+assert(
+  matchInkPalette(INK_PALETTES[2].stroke, INK_PALETTES[2].accent)?.id === "cyan",
+  "The active swatch can be recovered from a recipe palette"
+);
+assert(
+  new Set(INK_PALETTES.map((p) => p.id)).size === INK_PALETTES.length,
+  "Ink palette ids are unique"
 );
 
 console.log(`\n=========================================`);

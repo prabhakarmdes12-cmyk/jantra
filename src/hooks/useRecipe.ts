@@ -3,7 +3,8 @@ import { GrammarFamily, JantraRecipe } from "../types/recipe";
 import { defaultRecipe } from "../presets/defaultPresets";
 import { encodeRecipeToUrlHash, decodeRecipeFromUrlHash } from "../utils/url";
 import { computeRecipeChecksum } from "../utils/checksum";
-import { normalizeRecipe, defaultDetailFor } from "../engine/normalize";
+import { normalizeRecipe, defaultDetailLevelFor } from "../engine/normalize";
+import { InkPalette } from "../presets/inkPalettes";
 
 const MAX_HISTORY = 60;
 
@@ -106,7 +107,17 @@ export function useRecipe() {
         grammar: { family, id: `jantra-${family}`, version: prev.grammar.version },
         parameters: {
           ...prev.parameters,
-          detail: { ...defaultDetailFor(family), ...prev.parameters.detail },
+          // Carry the user's deviation from the old family's default dial
+          // position across to the new family's default.
+          detailLevel: Math.max(
+            0,
+            Math.min(
+              100,
+              (prev.parameters.detailLevel ?? defaultDetailLevelFor(prev.grammar.family)) -
+                defaultDetailLevelFor(prev.grammar.family) +
+                defaultDetailLevelFor(family)
+            )
+          ),
         },
       }));
     },
@@ -146,6 +157,44 @@ export function useRecipe() {
   const updateDetail = useCallback(
     (v: Partial<NonNullable<JantraRecipe["parameters"]["detail"]>>) => patch("detail", v),
     [patch]
+  );
+  const updateEvolution = useCallback(
+    (v: Partial<NonNullable<JantraRecipe["parameters"]["evolution"]>>) => patch("evolution", v),
+    [patch]
+  );
+
+  /** Moving the Detail Level dial clears the per-layer overrides it governs. */
+  const updateDetailLevel = useCallback(
+    (detailLevel: number) =>
+      setRecipe((prev) => ({
+        ...prev,
+        parameters: { ...prev.parameters, detailLevel, detail: {} },
+      })),
+    [setRecipe]
+  );
+
+  /** Apply a complete four-ink colourway, and its plate background with it. */
+  const applyInk = useCallback(
+    (ink: InkPalette) =>
+      setRecipe((prev) => ({
+        ...prev,
+        canvas: {
+          ...prev.canvas,
+          background: prev.canvas.background === "transparent" ? "transparent" : ink.background,
+        },
+        parameters: {
+          ...prev.parameters,
+          line: { ...prev.parameters.line, color: ink.stroke },
+          palette: {
+            ...prev.parameters.palette,
+            stroke: ink.stroke,
+            secondaryStroke: ink.secondaryStroke,
+            accent: ink.accent,
+            construction: ink.construction,
+          },
+        },
+      })),
+    [setRecipe]
   );
 
   const updateDensity = useCallback(
@@ -206,6 +255,9 @@ export function useRecipe() {
     updateMotifs,
     updatePalette,
     updateDetail,
+    updateDetailLevel,
+    updateEvolution,
+    applyInk,
     updateCanvas,
     loadRecipe,
     resetToDefault,

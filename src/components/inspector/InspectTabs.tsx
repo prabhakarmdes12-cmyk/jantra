@@ -13,6 +13,10 @@ interface InspectTabsProps {
   recipe: JantraRecipe;
   hiddenLayers: Set<string>;
   onToggleLayer: (id: string) => void;
+  /** Render just one pane, driven by the parent rail's tab bar. */
+  only?: "layers" | "code";
+  /** Inspect mode adds the ring-spacing and vertex-coordinate tables. */
+  showAdvanced?: boolean;
 }
 
 const TABS: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
@@ -35,8 +39,28 @@ function extractVertices(d: string, limit = 400): Array<[number, number]> {
   return out;
 }
 
-export const InspectTabs: React.FC<InspectTabsProps> = ({ scene, recipe, hiddenLayers, onToggleLayer }) => {
-  const [tab, setTab] = useState<Tab>("layers");
+export const InspectTabs: React.FC<InspectTabsProps> = ({
+  scene,
+  recipe,
+  hiddenLayers,
+  onToggleLayer,
+  only,
+  showAdvanced = true,
+}) => {
+  const [tab, setTab] = useState<Tab>(only ?? "layers");
+
+  // Follow the parent rail when it owns the tab selection.
+  React.useEffect(() => {
+    if (only) setTab((prev) => (prev === "layers" || prev === "code" ? only : prev));
+  }, [only]);
+
+  const visibleTabs = showAdvanced
+    ? only === "layers"
+      ? TABS.filter((t) => t.id === "layers" || t.id === "spacing" || t.id === "vertices")
+      : only === "code"
+        ? []
+        : TABS
+    : [];
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const [codeMode, setCodeMode] = useState<"svg" | "json">("svg");
   const [copied, setCopied] = useState(false);
@@ -72,8 +96,12 @@ export const InspectTabs: React.FC<InspectTabsProps> = ({ scene, recipe, hiddenL
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
-      <div className="grid grid-cols-4 gap-0.5 p-1 mx-3 rounded-lg bg-zinc-950 border border-zinc-800/80">
-        {TABS.map(({ id, label, icon: Icon }) => (
+      {visibleTabs.length > 1 && (
+      <div
+        className="grid gap-0.5 p-1 mx-3 mt-3 rounded-lg bg-zinc-950 border border-zinc-800/80"
+        style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, minmax(0, 1fr))` }}
+      >
+        {visibleTabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
@@ -87,6 +115,7 @@ export const InspectTabs: React.FC<InspectTabsProps> = ({ scene, recipe, hiddenL
           </button>
         ))}
       </div>
+      )}
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3">
         {/* ------------------------------ LAYERS ----------------------------- */}
